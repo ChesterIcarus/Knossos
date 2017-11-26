@@ -1,4 +1,4 @@
-from shapely.geometry import shape, asShape
+from shapely.geometry import shape, asShape, polygon
 import shapely
 import pymysql
 import getpass
@@ -40,21 +40,19 @@ class apn_verification(object):
         insert_tuple = list()
         progress = 0
         total = len(parcel_set['features'])
+        bounding_for_maz = polygon.LinearRing([(564413, 892531), (618474, 892531), (564413, 894696), (618474, 894696)])
+        for maz in maz_set['features']:
+            try:
+                if not ((shape(maz['geometry'])).representative_point()).within(bounding_for_maz):
+                    maz_set['features'].remove(maz)
+            except ValueError as topErr:
+                if not (shape(maz['geometry'])).within(bounding_for_maz):
+                    maz_set['features'].remove(maz)
         for feature in parcel_set['features']:
             try:
                 feature_shape = (shape(feature['geometry'])).representative_point()
             except ValueError as topExcep:
                 feature_shape = shape(feature['geometry'])
-            if (progress >= (.025*total)):print(".25");conn.commit()
-            if (progress >= (.1*total)):print("1");conn.commit()
-            if (progress >= (.2*total)):print("2");conn.commit()
-            if (progress >= (.3*total)):print("3");conn.commit()
-            if (progress >= (.4*total)):print("4");conn.commit()
-            if (progress >= (.5*total)):print("5");conn.commit()
-            if (progress >= (.6*total)):print("6");conn.commit()
-            if (progress >= (.7*total)):print("7");conn.commit()
-            if (progress >= (.8*total)):print("8");conn.commit()
-            if (progress >= (.9*total)):print("9");conn.commit()
             progress += 1
             for bounding in maz_set['features']:
                 bounding_shape = shape(bounding['geometry'])
@@ -73,6 +71,6 @@ if __name__ == "__main__":
     x = apn_verification()
     files = {'parcel': 'Parcels_All/all_parcel.geojson', 'maz':'real_maz/maz.geojson'}
     pw = getpass.getpass()
-    db_param = {'user':'root', 'password':pw, 'database':'apn', 'table_name':'apn_test', 'drop':True, 'host':'localhost'}
+    db_param = {'user':'root', 'password':pw, 'database':'apn', 'table_name':'bounded_maz', 'drop':True, 'host':'localhost'}
     x.parsing_apns(files, db_param)
 
