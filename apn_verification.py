@@ -1,4 +1,5 @@
-from shapely.geometry import shape, asShape, polygon
+from shapely.geometry import shape, polygon
+from __init__ import bounding_for_maz
 import shapely
 import pymysql
 import getpass
@@ -40,7 +41,7 @@ class apn_verification(object):
         insert_tuple = list()
         progress = 0
         total = len(parcel_set['features'])
-        bounding_for_maz = polygon.LinearRing([(564413, 892531), (618474, 892531), (564413, 894696), (618474, 894696)])
+        # bounding_for_maz = polygon.LinearRing([(564413, 892531), (618474, 892531), (564413, 894696), (618474, 894696)])
         for maz in maz_set['features']:
             try:
                 if not ((shape(maz['geometry'])).representative_point()).within(bounding_for_maz):
@@ -54,16 +55,16 @@ class apn_verification(object):
             except ValueError as topExcep:
                 feature_shape = shape(feature['geometry'])
             progress += 1
-            for bounding in maz_set['features']:
-                bounding_shape = shape(bounding['geometry'])
-                if feature_shape.within(bounding_shape):
-                    insert_tuple = tuple([feature['properties']['APN'], bounding['properties']['MAZ_ID_10']])
-                    print(insert_tuple)
-                    exec_str = ("INSERT into {0} values {1};").format(database['table_name'], insert_tuple)
-                    cur.execute(exec_str)
-                    conn.commit()
-                    # parcel_set['features'].remove(feature)
-                    break
+            if feature_shape.within(bounding_for_maz):
+                for bounding in maz_set['features']:
+                    bounding_shape = shape(bounding['geometry'])
+                    if feature_shape.within(bounding_shape):
+                        insert_tuple = tuple([feature['properties']['APN'], bounding['properties']['MAZ_ID_10']])
+                        print(insert_tuple)
+                        exec_str = ("INSERT into {0} values {1};").format(database['table_name'], insert_tuple)
+                        cur.execute(exec_str)
+                        # parcel_set['features'].remove(feature)
+                        break
         conn.commit()
         conn.close()
 
@@ -71,6 +72,6 @@ if __name__ == "__main__":
     x = apn_verification()
     files = {'parcel': 'Parcels_All/all_parcel.geojson', 'maz':'real_maz/maz.geojson'}
     pw = getpass.getpass()
-    db_param = {'user':'root', 'password':pw, 'database':'apn', 'table_name':'bounded_maz', 'drop':True, 'host':'localhost'}
+    db_param = {'user':'root', 'database':'apn.db', 'table_name':'bounded_maz', 'drop':True, 'host':'localhost'}
     x.parsing_apns(files, db_param)
 
