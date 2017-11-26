@@ -1,6 +1,3 @@
-import geojson
-import pygeoj
-import geopandas as gp
 from shapely.geometry import shape, asShape
 import pymysql
 import getpass
@@ -62,12 +59,6 @@ class apn_verification(object):
         conn.commit()
         conn.close()
 
-
-    def testing(self, filepath):
-        f_ = pygeoj.load(filepath)
-        print(f_.crs)
-        print(f_.bbox)
-        print(f_[2])
 
 if __name__ == "__main__":
     x = apn_verification()

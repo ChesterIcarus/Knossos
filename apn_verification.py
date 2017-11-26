@@ -1,10 +1,8 @@
-import geojson
-import pygeoj
-import geopandas as gp
 from shapely.geometry import shape, asShape
 import pymysql
 import getpass
 import json
+import sqlite3 as sql
 
 class apn_verification(object):
     def __init__(self):
