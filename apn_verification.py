@@ -59,13 +59,6 @@ class apn_verification(object):
         conn.commit()
         conn.close()
 
-
-    def testing(self, filepath):
-        f_ = pygeoj.load(filepath)
-        print(f_.crs)
-        print(f_.bbox)
-        print(f_[2])
-
 if __name__ == "__main__":
     x = apn_verification()
     files = {'parcel': 'Parcels_All/all_parcel.geojson', 'maz':'real_maz/maz.geojson'}
