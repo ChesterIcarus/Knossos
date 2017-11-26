@@ -5,6 +5,7 @@ from shapely.geometry import shape, asShape
 import pymysql
 import getpass
 import json
+import sqlite3 as sql
 
 class apn_verification(object):
     def __init__(self):
@@ -23,7 +24,7 @@ class apn_verification(object):
         # parcel_set = gp.read_file(filepath['parcel'])
         # parcel_file.close()
         print("Parcel Loaded")
-        conn = pymysql.connect(host=database['host'], user=database['user'], password=database['password'], database=database['database'])
+        conn = sql.connect(database['database'])
         cur = conn.cursor()
         if (database['drop'] == True):
             cur.execute(("DROP TABLE if exists {}").format(database['table_name']))
@@ -39,7 +40,7 @@ class apn_verification(object):
         total = len(maz_set['features'])
         for bounding in maz_set['features']:
             bounding_shape = shape(bounding['geometry'])
-            if (progress >= (.025*total)):print(".25")
+            if (progress >= (.025*total)):print(".25");conn.commit()
             if (progress >= (.1*total)):print("1");conn.commit()
             if (progress >= (.2*total)):print("2");conn.commit()
             if (progress >= (.3*total)):print("3");conn.commit()
@@ -72,6 +73,6 @@ if __name__ == "__main__":
     x = apn_verification()
     files = {'parcel': 'Parcels_All/all_parcel.geojson', 'maz':'real_maz/maz.geojson'}
     pw = getpass.getpass()
-    db_param = {'host':'localhost', 'user':'root', 'password':pw, 'database':'apn', 'table_name':'test', 'drop':True}
+    db_param = {'host':'localhost', 'user':'root', 'password':pw, 'database':'apn.db', 'table_name':'test', 'drop':True}
     x.parsing_apns(files, db_param)
 
