@@ -23,8 +23,8 @@ class apn_verification(object):
         parcel_file.close()
         print("Parcel Loaded")
         try:
-            print("System Level DB created")
             conn = pymysql.connect(host=database['host'], user=database['user'], password=database['password'], database=database['database'])
+            print("System Level DB created")
         except KeyError as keyErr:
             print("File Level DB created")
             conn = sql.connect(database['database'])

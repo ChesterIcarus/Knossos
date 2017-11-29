@@ -65,7 +65,7 @@ class plan_to_matplan(object):
                     if (item['destAPN'] == row[1]):
                         existing_zone = True
                         # Should be leaving from the place they last went to
-                        orig_apn = self.actor_dict[row[0]][-1]['apn']
+                        orig_apn = self.actor_dict[row[0]][-1]['destAPN']
                         break
                 # Need to re-classify for buiness/commercial properties, and home size
                 # Still a ton of work to be done
@@ -73,28 +73,41 @@ class plan_to_matplan(object):
                     orig_count = 0
                     while orig_apn in self.orig_apn:
                         if orig_count > 25:
-                            print("Done")
                             break
                         exec_str = ("SELECT apn from {0} WHERE {1} = {2} and _ROWID_ >= (abs(random()) % (SELECT max(_ROWID_) FROM {0})) limit 1;").format(database['apn_table_name'], database['apn_selector'], row[1])
-                        orig_apn = self.apn_cur.execute(exec_str)
+                        orig_apn_cur = self.apn_cur.execute(exec_str)
+                        orig_apn_cur = orig_apn_cur.fetchone()
+                        
+                        if orig_apn_cur != None:
+                            orig_apn = orig_apn_cur
+                        else:
+                            orig_apn = "1"
+                        orig_count += 1
                     self.orig_apn[orig_apn] = "Used"
-                    orig_count += 1
                 # Destination Generation
                 dest_apn = "1"
                 dest_count = 0
                 while dest_apn in self.dest_apn:
                     if dest_count > 25:
-                        print("Done")
                         break
-                    exec_str = ("SELECT apn from {0} WHERE _ROWID_ >= (abs(random()) % (SELECT max(_ROWID_) FROM {0})) and {1} = {2} limit 1;").format(database['apn_table_name'], database['apn_selector'], row[2])
-                    dest_apn = self.apn_cur.execute(exec_str)
+                    exec_str = ("SELECT * from {0} WHERE {1} = {2} limit 1").format(database['apn_table_name'], database['apn_selector'], row[2])
+                    dest_apn_cur = None
+                    for item in self.apn_cur.execute(exec_str):
+                        print(item[0])
+                        dest_apn_cur = item[0]
+                    if dest_apn_cur != None:
+                        dest_apn = dest_apn_cur
+                    else:
+                        dest_apn = "1"
                     dest_count += 1
                 self.dest_apn[dest_apn] = "Used"
-                self.actor_dict[row[0]].append({'origAPN': orig_apn, 'destAPN':dest_apn, 'mode':row[3], 'finalDepartMin':row[4], 'timeAtDest':row[5]})
-        pickle.dump(self.actor_dict, open('actor_plans.pickle', 'wb'))
+                if (orig_apn and dest_apn != "1"):
+                    self.actor_dict[row[0]].append({'origAPN': orig_apn, 'destAPN':str(dest_apn), 'mode':int(row[3]), 'finalDepartMin':str(row[4]), 'timeAtDest':str(row[5])})
+        with (open('actor_plans.pickle', 'wb')) as handle:
+            pickle.dump(self.actor_dict, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 if __name__ == "__main__":
     x = plan_to_matplan()
-    x1 = {"plan_database": "csv.db", "apn_database": "apn", "apn_table_name":"test", "apn_selector":"apn", "plan_table_name":"trips"}
+    x1 = {"plan_database": "csv.db", "apn_database": "apn.db", "apn_table_name":"bounded_maz", "apn_selector":"maz", "plan_table_name":"trips"}
     x2 = {"maz": "real_maz/maz.geojson"}
     x.from_db(x1, x2)
