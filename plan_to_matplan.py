@@ -3,111 +3,153 @@ import csv
 import json
 import pickle
 import sqlite3 as sql
+import numpy
 # from __init__ import bounding_for_maz
+from collections import defaultdict
 from shapely.geometry import shape, polygon
 
 class plan_to_matplan(object):
-
+    mode_dict = {
+       "1": "car",
+       "2": "car",
+       "3": "car",
+       "4": "car",
+       "5": "walk",
+       "6": "car",
+       "7": "car",
+       "8": "walk",
+       "9": "car",
+       "10": "car",
+       "11": "walk",
+       "12": "bike",
+       "13": "walk",
+       "14": "car"
+    }
     def __init__(self):
         print("Converting user plans to MATplans")
-    
-    def from_db(self, database, filepath):
-        self.plan_conn = sql.connect(database['plan_database'])
-        self.plan_cur = self.plan_conn.cursor()
+        self.maz_set = None
+        self.actor_dict = defaultdict(list)
+        self.plan_rows = dict()
 
-        self.apn_conn = sql.connect(database['apn_database'])
-        self.apn_cur = self.apn_conn.cursor()
-        self.actor_dict = dict()
-        # Placeholder for now
-        self.orig_apn = {"1":"1"}
-        self.dest_apn = {"1":"1"}
+    def connect_plan_db(self, database=None, _file=None):
+        if ((_file != None) and (database == None)):
+            self.plan_conn = sql.connect(_file)
+            self.plan_cur = self.plan_conn.cursor()
 
-        # Copied from APN for the time being
-        maz_file = open(filepath['maz'], 'r')
-        maz_set = json.load(maz_file)
-        maz_file.close()
-        maz_dict = dict()
-        bounding_for_maz = polygon.Polygon([(564413, 892531), (618474, 892531), (564413, 894696), (618474, 894696)])
-        if (os.path.isfile('maz_dict.pickle') == False):
-            for maz in maz_set['features']:
+    def connect_apn_db(self, database=None, _file=None):
+        if ((_file != None) and (database == None)):
+            self.apn_conn = sql.connect(_file)
+            self.apn_cur = self.apn_conn.cursor()
+
+    def bounded_maz_creation(self, preprocessed_file, output_file, maz_file=None, maz_in_memory=None, overwrite=False, linked_dict=None):
+        self.valid_maz_list = list()
+        self.maz_dict = dict()
+        if (preprocessed_file == None):
+            if (maz_in_memory == None) and (maz_file != None):
+                with open(maz_file, 'r') as maz_f_:
+                    maz_set = json.load(maz_f_)
+            elif ((maz_in_memory != None) and (maz_file == None)):
+                maz_set = self.maz_set
+            else:
+                raise ValueError(None)
+            bounding_for_maz = polygon.LinearRing([(649054, 896498), (649192, 888749), (665535, 896129), (663998, 889026)])
+        
+            for index, maz in enumerate(maz_set['features']):
                 try:
                     if ((shape(maz['geometry'])).representative_point()).within(bounding_for_maz):
-                        maz_dict[maz['properties']['MAZ_ID_10']] = "True"
+                        rep = (shape(maz['geometry'])).representative_point()
+                        try:
+                            maz_set['features'][index]['geometry']['coordinates'] = rep.coords[0]
+                            maz_set['features'][index]['geometry']['type'] = "Point"
+                        except IndexError as idxErr:
+                            maz_set['features'][index]['geometry']['coordinates'] = rep.coords
+                            maz_set['features'][index]['geometry']['type'] = "Point"
+                        self.maz_dict[maz['properties']['MAZ_ID_10']] = maz_set['features'][index]
                     else:
                         maz_set['features'].remove(maz)
                 except ValueError as topErr:
                     if (shape(maz['geometry'])).within(bounding_for_maz):
-                        maz_dict[maz['properties']['MAZ_ID_10']] = "True"
+                        self.maz_dict[maz['properties']['MAZ_ID_10']] = maz_set['features'][index]
+                        self.valid_maz_list.append(maz['properties']["MAZ_ID_10"])
                     else:
                         maz_set['features'].remove(maz)
-            with open('maz_dict.pickle', 'wb') as handle:
-                pickle.dump(maz_dict, handle, protocol=pickle.HIGHEST_PROTOCOL)
+            if (os.path.isfile(output_file) == False) or (overwrite == True):
+                with open(output_file, 'w') as handle:
+                    json.dump(list(self.maz_dict.values()), handle)
         else:
-            maz_dict = pickle.load(open('maz_dict.pickle','rb'))
-        if (os.path.isfile('plan_list.pickle') == False):
-            self.plan_cur.execute(("SELECT * from {0}").format(database['plan_table_name']))
-            plan_rows = self.plan_cur.fetchall()
-            with open('plan_list.pickle', 'wb') as handle:
-                pickle.dump(plan_rows, handle, protocol=pickle.HIGHEST_PROTOCOL)
-        else:
-            plan_rows = pickle.load(open('plan_list.pickle','rb'))
-        print("plans fetched and MAZ's sorted")
-        for row in plan_rows:
-            # Testing if maz is in valid defined subset
-            if (row[1] in maz_dict) and (row[2] in maz_dict):
-                # Actor dict is an array of  of trips
-                # {"id": [{'origApn': val, 'mode': val, 'destApn': val, 'finalDepartMin':val, 'timeToSpend':val}, {...}]}
-                if (row[0] not in self.actor_dict):
-                    self.actor_dict[row[0]] = list()
-                existing_zone = False
-                orig_apn = "1"
-                for item in self.actor_dict[row[0]]:
-                    if (item['destAPN'] == row[1]):
-                        existing_zone = True
-                        # Should be leaving from the place they last went to
-                        orig_apn = self.actor_dict[row[0]][-1]['destAPN']
-                        break
-                # Need to re-classify for buiness/commercial properties, and home size
-                # Still a ton of work to be done
-                if existing_zone == False:
-                    orig_count = 0
-                    while orig_apn in self.orig_apn:
-                        if orig_count > 25:
-                            break
-                        exec_str = ("SELECT apn from {0} WHERE {1} = {2} and _ROWID_ >= (abs(random()) % (SELECT max(_ROWID_) FROM {0})) limit 1;").format(database['apn_table_name'], database['apn_selector'], row[1])
-                        orig_apn_cur = self.apn_cur.execute(exec_str)
-                        orig_apn_cur = orig_apn_cur.fetchone()
-                        
-                        if orig_apn_cur != None:
-                            orig_apn = orig_apn_cur
-                        else:
-                            orig_apn = "1"
-                        orig_count += 1
-                    self.orig_apn[orig_apn] = "Used"
-                # Destination Generation
-                dest_apn = "1"
-                dest_count = 0
-                while dest_apn in self.dest_apn:
-                    if dest_count > 25:
-                        break
-                    exec_str = ("SELECT * from {0} WHERE {1} = {2} limit 1").format(database['apn_table_name'], database['apn_selector'], row[2])
-                    dest_apn_cur = None
-                    for item in self.apn_cur.execute(exec_str):
-                        print(item[0])
-                        dest_apn_cur = item[0]
-                    if dest_apn_cur != None:
-                        dest_apn = dest_apn_cur
-                    else:
-                        dest_apn = "1"
-                    dest_count += 1
-                self.dest_apn[dest_apn] = "Used"
-                if (orig_apn and dest_apn != "1"):
-                    self.actor_dict[row[0]].append({'origAPN': orig_apn, 'destAPN':str(dest_apn), 'mode':int(row[3]), 'finalDepartMin':str(row[4]), 'timeAtDest':str(row[5])})
-        with (open('actor_plans.pickle', 'wb')) as handle:
-            pickle.dump(self.actor_dict, handle, protocol=pickle.HIGHEST_PROTOCOL)
+            if (linked_dict == None):
+                self.maz_dict = json.load(open(preprocessed_file,'r'))
+            else:
+                self.maz_dict = linked_dict
+            self.valid_maz_list = list(self.maz_dict.keys())
 
+    def load_plans_from_json(self, filename):
+        self.plan_rows = json.load(open(filename,'r'))
+        print("Loaded")
+
+    def load_plans_from_sqlite(self, table):
+        rows_query = ("SELECT * from {}").format(table)
+        self.plan_rows = self.plan_cur.execute(rows_query).fetchall()
+
+    def maz_to_plan_db(self, apn_table, apn_selector, output_file):
+        orig_apn = None
+        dest_apn = None
+        count = 0
+        for row in self.plan_rows:
+            # Testing if maz is in valid defined subset
+            while ((orig_apn == dest_apn) and (count < 10)):
+                if (((row[2] in self.valid_maz_list) and (row[3] in self.valid_maz_list)) or (row[1] in self.actor_dict)):
+                    if (row[1] in self.actor_dict) and (count == 0):
+                        orig_apn = self.actor_dict[row[1]][len(self.actor_dict[row[1]])-1]['destAPN']
+                        prior_maz = self.actor_dict[row[1]][len(self.actor_dict[row[1]])-1]['origMaz']
+                    else:
+                        exec_str = ("SELECT * FROM {0} WHERE {1} = {2}").format(apn_table, apn_selector, row[2])
+                        orig_apn = self.apn_cur.execute(exec_str).fetchall()
+                        if len(orig_apn) <= 0: orig_apn = None; break
+                        orig_apn = orig_apn[numpy.random.randint(-1, len(orig_apn)-1)][0]
+                    if (row[3] not in self.valid_maz_list):
+                        exec_str = ("SELECT * FROM {0} WHERE {1} = {2}"\
+                            ).format(apn_table, apn_selector, prior_maz)
+                        dest_apn = self.apn_cur.execute(exec_str).fetchall()
+                        if len(dest_apn) <= 0: dest_apn = None; break
+                        dest_apn = dest_apn[numpy.random.randint(-1, len(dest_apn)-1)][0]
+                    else:
+                        exec_str = ("SELECT * FROM {0} WHERE {1} = {2}"\
+                            ).format(apn_table, apn_selector, row[3])
+                        dest_apn = self.apn_cur.execute(exec_str).fetchall()
+                        if len(dest_apn) <= 0: dest_apn = None; break
+                        dest_apn = dest_apn[numpy.random.randint(-1, len(dest_apn)-1)][0]
+                else:
+                    break
+                count += 1
+            if (dest_apn != orig_apn) and (dest_apn != None) and (orig_apn != None):
+                depart_time = (float(row[7]) * (30 * 60) + (4.5 * 60 * 60)) / 60
+                travel_time = (float(row[9]) * (30 * 60) + (4.5 * 60 * 60)) / 60
+                arrive_time = (float(row[10]) * (30 * 60) + (4.5 * 60 * 60)) / 60
+                self.actor_dict[row[1]].append({'origAPN': orig_apn, 'destAPN':dest_apn, \
+                    'mode':self.mode_dict[str(row[6])], 'origPurp': str(row[4]), 'destPurp': str(row[5]), \
+                    'finalDepartMin':str(depart_time), 'timeAtDest': None,\
+                    'origMaz': int(row[2]) if (row[2] in self.valid_maz_list) else (prior_maz),\
+                    'travelMin':travel_time , 'tripDistance': float(row[8])})
+            count = 0
+            orig_apn = None
+            dest_apn = None
+                
+    # with (open('actor_plans.json', 'w')) as handle:
+        #     json.dump(self.actor_dict, handle)
+        with open(output_file, 'w') as handle:
+            for itm in self.actor_dict:
+                for index, item in enumerate(self.actor_dict[itm]):
+                    y = self.actor_dict[itm][index]
+                    x = ("{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}\n").format(itm, y['origAPN'], y['destAPN'], y['mode'], y['origPurp'], y['destPurp'], y['timeAtDest'], y['finalDepartMin'], y['travelMin'])
+                    handle.write(x)
+        
 if __name__ == "__main__":
     x = plan_to_matplan()
-    x1 = {"plan_database": "csv.db", "apn_database": "apn.db", "apn_table_name":"bounded_maz", "apn_selector":"maz", "plan_table_name":"trips"}
+    x1 = {"plan_database": "actor_plan.db", "apn_database": "cleaned.db", "apn_table_name":"clean", "apn_selector":"maz", "plan_table_name":"trips"}
     x2 = {"maz": "real_maz/maz.geojson"}
-    x.from_db(x1, x2)
+    x.connect_apn_db(_file="cleaned.db")
+    x.connect_plan_db(_file="actor_plan.db")
+    x.bounded_maz_creation(x2["maz"], None)
+    # x.load_plans("actor_plans.json")
+    x.maz_to_plan_DB("clean", "maz", "actor_plan_test2.txt")
