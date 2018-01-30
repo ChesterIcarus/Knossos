@@ -1,4 +1,4 @@
-from plan_to_matplan import plan_to_matplan as ptm
+from plan_to_matplan import PlanToMatplan as ptm
 from apn_linking import apn_linking as al
 
 

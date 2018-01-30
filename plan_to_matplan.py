@@ -8,7 +8,7 @@ import numpy
 from collections import defaultdict
 from shapely.geometry import shape, polygon
 
-class plan_to_matplan(object):
+class PlanToMatplan(object):
     mode_dict = {
        "1": "car",
        "2": "car",
@@ -53,7 +53,7 @@ class plan_to_matplan(object):
             else:
                 raise ValueError(None)
             bounding_for_maz = polygon.LinearRing([(649054, 896498), (649192, 888749), (665535, 896129), (663998, 889026)])
-        
+
             for index, maz in enumerate(maz_set['features']):
                 try:
                     if ((shape(maz['geometry'])).representative_point()).within(bounding_for_maz):
@@ -134,22 +134,13 @@ class plan_to_matplan(object):
             count = 0
             orig_apn = None
             dest_apn = None
-                
+
     # with (open('actor_plans.json', 'w')) as handle:
         #     json.dump(self.actor_dict, handle)
         with open(output_file, 'w') as handle:
             for itm in self.actor_dict:
-                for index, item in enumerate(self.actor_dict[itm]):
+                for index in range(0, len(self.actor_dict[itm])):
                     y = self.actor_dict[itm][index]
                     x = ("{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}\n").format(itm, y['origAPN'], y['destAPN'], y['mode'], y['origPurp'], y['destPurp'], y['timeAtDest'], y['finalDepartMin'], y['travelMin'])
                     handle.write(x)
-        
-if __name__ == "__main__":
-    x = plan_to_matplan()
-    x1 = {"plan_database": "actor_plan.db", "apn_database": "cleaned.db", "apn_table_name":"clean", "apn_selector":"maz", "plan_table_name":"trips"}
-    x2 = {"maz": "real_maz/maz.geojson"}
-    x.connect_apn_db(_file="cleaned.db")
-    x.connect_plan_db(_file="actor_plan.db")
-    x.bounded_maz_creation(x2["maz"], None)
-    # x.load_plans("actor_plans.json")
-    x.maz_to_plan_DB("clean", "maz", "actor_plan_test2.txt")
+
