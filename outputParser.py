@@ -1,8 +1,10 @@
-import xml.etree.ElementTree as et
 from xml.dom import minidom
+import xml.etree.ElementTree as et
 from collections import defaultdict
 
-type_dict = {"all": ["time", "type"],
+
+class outputParser:
+    type_dict = {"all": ["time", "type"],
              "actend": ["actType", "link", "person"],
              "departure": ["legMode", "link", "person"],
              "PersonEntersVehicle": ["vehicle", "person"],
@@ -15,8 +17,6 @@ type_dict = {"all": ["time", "type"],
              "left link": ["vehicle", "link"]
                  }
 
-
-class outputParser(object):
     def __init__(self):
         # Init self var's
         print("Starting output parsing")
@@ -24,7 +24,7 @@ class outputParser(object):
         self.event_dict = defaultdict(list)
         self.events = None
         self.db_conn = None
-        self.db_cur = No
+        self.db_cur = None
 
     def input_file(self, filename):
         try:
@@ -38,10 +38,10 @@ class outputParser(object):
 
     def process_all_events(self):
         for event in self.events:
-            type_list = type_dict[event.attributes["type"].value]
+            type_list = self.type_dict[event.attributes["type"].value]
             _ev = []
             try:
-                for attr in (type_dict["all"] + type_list):
+                for attr in (self.type_dict["all"] + type_list):
                     _ev.append(event.attributes[attr].value)
                 self.event_dict[event.attributes["type"].value].append(_ev)
             except KeyError as key_err:
@@ -51,9 +51,9 @@ class outputParser(object):
     def process_specif_events(self):
         for event in self.events:
             if event.attributes["type"].value in self.events_of_interest:
-                type_list = type_dict[event.attributes["type"].value]
+                type_list = self.type_dict[event.attributes["type"].value]
                 _ev = []
-                for attr in (type_dict["all"] + type_list):
+                for attr in (self.type_dict["all"] + type_list):
                     _ev.append(event.attributes[attr].value)
                 self.event_dict[event.attributes["type"].value].append(_ev)
 
@@ -72,7 +72,7 @@ class outputParser(object):
         for key, value in self.event_dict.items():
             with open(filename.format(key), 'w+') as handle:
                 handle.write((('{}, ' * (len(type_dict["all"] + type_dict[key]))).\
-                        format(*(type_dict["all"] + type_dict[key]))).rstrip(', ') + "\n")
+                        format(*(self.type_dict["all"] + self.type_dict[key]))).rstrip(', ') + "\n")
                 for event in value:
                     _ev = (('{}, ' * (len(event))).format(*event)).rstrip(', ') + "\n"
                     handle.write(_ev)

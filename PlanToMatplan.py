@@ -52,11 +52,17 @@ class PlanToMatplan(object):
                 maz_set = self.maz_set
             else:
                 raise ValueError(None)
+            
+            all_in_bounding = True
             bounding_for_maz = polygon.LinearRing([(649054, 896498), (649192, 888749), (665535, 896129), (663998, 889026)])
 
             for index, maz in enumerate(maz_set['features']):
                 try:
-                    if ((shape(maz['geometry'])).representative_point()).within(bounding_for_maz):
+                    add_to_set = True
+                    if (all_in_bounding == False):
+                        if not ((shape(maz['geometry'])).representative_point()).within(bounding_for_maz):
+                            add_to_set = False
+                    if (add_to_set == True):
                         rep = (shape(maz['geometry'])).representative_point()
                         try:
                             maz_set['features'][index]['geometry']['coordinates'] = rep.coords[0]
@@ -141,6 +147,19 @@ class PlanToMatplan(object):
             for itm in self.actor_dict:
                 for index in range(0, len(self.actor_dict[itm])):
                     y = self.actor_dict[itm][index]
-                    x = ("{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}\n").format(itm, y['origAPN'], y['destAPN'], y['mode'], y['origPurp'], y['destPurp'], y['timeAtDest'], y['finalDepartMin'], y['travelMin'])
+                    x = ("{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}\n").format(\
+                            itm,\
+                            y['origAPN'],\
+                            y['destAPN'],\
+                            y['origCoord_x'],\
+                            y['origCoord_y'],\
+                            y['destCoord_x'],\
+                            y['destCoord_y'],\
+                            y['mode'],\
+                            y['origPurp'],\
+                            y['destPurp'],\
+                            y['timeAtDest'],\
+                            y['finalDepartMin'],\
+                            y['travelMin'])
                     handle.write(x)
 

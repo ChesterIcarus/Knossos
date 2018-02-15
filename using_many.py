@@ -10,7 +10,7 @@ x.load_maz_and_parcel(files)
 x.get_valid_ways(osm)
 x.apn_bounding()
 # x.db_connection(db_param)
-x.apn_MAZ_osmID_linking(False)
+x.assign_apn_to_MAZ(False)
 
 y = ptm()
 y.connect_apn_db(_file="cleaned.db")

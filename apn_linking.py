@@ -54,13 +54,13 @@ class apn_linking(object):
         self.cur = self.conn.cursor()
         if (database['drop'] is True):
             self.cur.execute(("DROP TABLE if exists {}").format(database['table_name']))
-            exec_str = ("CREATE table {0} (osm_way_id CHAR(12), APN CHAR(12), maz INT UNSIGNED NOT NULL)").format(database['table_name'])
+            exec_str = ("CREATE table {0} (osm_way_id CHAR(12), coord FLOAT, APN CHAR(12), maz INT UNSIGNED NOT NULL)").format(database['table_name'])
             self.cur.execute(exec_str)
         self.table_name = database['table_name']
 
     def apn_bounding(self, apn_bounding=None):
         # Setting bounding on the map for reduced APN eval. based on MAZ
-        if (apn_bounding is not None):
+        if apn_bounding:
             bounding_from_inp = polygon.Polygon(apn_bounding['poly_coords'], apn_bounding['poly_holes'] if ('poly_holes' in apn_bounding.keys()) else None)
             proj_to_map = partial(pyproj.transform, pyproj.Proj(init=apn_bounding['poly_crs']), pyproj.Proj(init=('epsg:{}').format(self.crs)))
             bounding_for_maz = transform(proj_to_map, bounding_from_inp)
@@ -105,8 +105,12 @@ class apn_linking(object):
                     bounding_shape = shape(bounding['geometry'])
                     if feature_shape.within(bounding_shape):
                         if feature['properties']['osm_id'] in self.valid_way_dict:
-                            insert_tuple = tuple([self.valid_way_dict[feature['properties']['osm_id']], 
-                                feature['properties']['APN'], bounding['properties']['MAZ_ID_10']])
+                            insert_tuple = tuple(\
+                                [\
+                                    self.valid_way_dict[feature['properties']['osm_id']],\
+                                    feature['properties']['APN'],\
+                                    feature['properties']['coordinates'][0],
+                                    bounding['properties']['MAZ_ID_10']])
                             if (db_output is True):
                                 exec_str = ("INSERT INTO {} values {};").format(self.table_name, insert_tuple)
                                 self.cur.execute(exec_str)
@@ -121,7 +125,7 @@ class apn_linking(object):
 
 if __name__ == "__main__":
     # x = apn_linking()
-    files = {'parcel': '../Shapefiles/Cleaned/test_dirty_point.geojson', 'maz': 'real_maz/min_maz.geojson', 'osm': '../Shapefiles/Cleaned/working_test.xml'}
+    files = {'parcel': './Parcel/parcel.geojson', 'maz': 'MAZ/maz.geojson', 'osm': '../Shapefiles/Cleaned/working_test.xml'}
     # pw = getpass.getpass()
     # host, user, password, database, table_name, drop
     db_param = {'user':'root', 'database':'cleaned.db', 'table_name':'clean', 'drop':True, 'host':'localhost'}
