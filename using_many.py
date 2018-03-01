@@ -1,5 +1,5 @@
-from plan_to_matplan import PlanToMatplan as ptm
-from apn_linking import apn_linking as al
+# from plan_to_matplan import PlanToMatplan as ptm
+# from apn_linking import apn_linking as al
 
 
 files = {'parcel': '../Shapefiles/Cleaned/test_dirty_point.geojson', 'maz':'real_maz/min_maz.geojson'} 

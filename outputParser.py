@@ -4,7 +4,9 @@ from collections import defaultdict
 
 
 class outputParser:
-    type_dict = {"all": ["time", "type"],
+
+    def __init__(self):
+        self.type_dict = {"all": ["time", "type"],
              "actend": ["actType", "link", "person"],
              "departure": ["legMode", "link", "person"],
              "PersonEntersVehicle": ["vehicle", "person"],
@@ -14,10 +16,7 @@ class outputParser:
              "arrival": ["legMode", "link", "person"],
              "actstart": ["actType", "link", "person"],
              "entered link": ["vehicle", "link"],
-             "left link": ["vehicle", "link"]
-                 }
-
-    def __init__(self):
+             "left link": ["vehicle", "link"]}
         # Init self var's
         print("Starting output parsing")
         self.events_of_interest = None
@@ -71,7 +70,7 @@ class outputParser:
             raise ValueError("Invalid Filename")
         for key, value in self.event_dict.items():
             with open(filename.format(key), 'w+') as handle:
-                handle.write((('{}, ' * (len(type_dict["all"] + type_dict[key]))).\
+                handle.write((('{}, ' * (len(self.type_dict["all"] + self.type_dict[key]))).\
                         format(*(self.type_dict["all"] + self.type_dict[key]))).rstrip(', ') + "\n")
                 for event in value:
                     _ev = (('{}, ' * (len(event))).format(*event)).rstrip(', ') + "\n"

@@ -2,10 +2,11 @@ from shapely.geometry import shape, polygon
 from __init__ import bounding_for_maz
 import json
 import pyproj
-import pymysql
+# import pymysql
 import getpass
 import sqlite3 as sql
-import pymysql as mysql
+# import pymysql as mysql
+import MySQLdb as mysql
 from functools import partial
 from shapely.ops import transform
 
@@ -132,7 +133,6 @@ class LinkingApnToMaz:
 
 
 if __name__ == "__main__":
-    # files = {'parcel': './Parcel/parcel.geojson', 'maz': 'MAZ/maz.geojson', 'osm': '../Shapefiles/Cleaned/working_test.xml'}
     files = {'parcel': '../Shapefiles/Cleaned/test_dirty_point.geojson', 'maz':'MAZ/maz.geojson'}
     pw = getpass.getpass()
     db_param = {'user':'root', 'db':'LinkingApnToMaz', 'host':'localhost', 'password': pw}
