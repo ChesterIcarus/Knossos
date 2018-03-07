@@ -52,19 +52,7 @@ class MagDataToPlansByPidAndMaz:
         self.table_name = table_name
         if drop == True:
             self.cur.execute(("DROP TABLE if exists {}").format(table_name))
-        # exec_str = ('CREATE TABLE {} \n'
-        #             '            (unique_id PRIMARY KEY VARCHAR(25),\n'
-        #             '            pid KEY VARCHAR(20),\n'
-        #             '            orig_maz MEDIUMINT,\n'
-        #             '            dest_maz MEDIUMINT,\n'
-        #             '            orig_purp CHAR(2),\n'
-        #             '            dest_purp CHAR(2),\n'
-        #             '            mode SMALLINT UNSIGNED,\n'
-        #             '            depart_min FLOAT,\n'
-        #             '            trip_dist FLOAT,\n'
-        #             '            arrival_min FLOAT,\n'
-        #             '            time_at_dest FLOAT)').format(table_name)
-        self.cur.execute(('CREATE TABLE {0} \n'
+            self.cur.execute(('CREATE TABLE {0} \n'
                     '            (unique_id VARCHAR(25),\n'
                     '            pid VARCHAR(20),\n'
                     '            orig_maz MEDIUMINT,\n'
@@ -95,24 +83,24 @@ class MagDataToPlansByPidAndMaz:
                 actor[32] = 0
 
             uuid = ('{}_{}_{}').format(str(actor[0]), str(actor[2]), str(actor[3]))
-            pid = ('{}_{}').format(str(actor[2]), str(actor[3]))
+            pid = f'{actor[2]}_{actor[3]}'
 
             orig_purp = self.purpose_dict[str(actor[22])]
             dest_purp = self.purpose_dict[str(actor[23])]
 
-            actor_data = [uuid, pid, int(actor[19]), int(actor[21]),
-                          orig_purp, dest_purp, int(actor[24]),
-                          float(actor[31]), float(actor[27]), 
-                          float(actor[29]), float(actor[26])]
+            actor_data = [uuid, pid, int(actor[19]), int(actor[21]), orig_purp, dest_purp, int(actor[24]),
+                          float(actor[26]), float(actor[27]), float(actor[31]), float(actor[32])]
             self.actor_dict[pid].append(actor_data)
-        for actor in self.actor_dict:
-            self.actor_dict[actor] = sorted(self.actor_dict[actor], key=lambda x: x[7])
+        # for actor in self.actor_dict:
+        #     self.actor_dict[actor] = sorted(self.actor_dict[actor], key=lambda x: x[7])
 
     def write_mag_to_sql(self):
         for actor in self.actor_dict:
+            insert_list = list()
             for x in self.actor_dict[actor]:
-                exec_str = f"INSERT INTO {self.table_name} VALUES {tuple(x)}"
-            self.cur.execute(exec_str)
+                insert_list.append(tuple(x))
+            exec_str = f"INSERT INTO {self.table_name} VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
+            self.cur.executemany(exec_str, insert_list)
         self.conn.commit()
 
     def write_mag_to_file(self, filepath):

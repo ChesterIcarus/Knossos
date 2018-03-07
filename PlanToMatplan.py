@@ -64,9 +64,9 @@ class PlanToMatplan(object):
                 mode CHAR(4),
                 origPurp CHAR(2),
                 destPurp CHAR(2),
-                arrivalTime CHAR(8),
-                finalDepartMin CHAR(8),
-                timeAtDest CHAR(8))"""
+                finalDepartTimeSec FLOAT,
+                arrivalTimeSec FLOAT,
+                timeAtDestSec FLOAT)"""
                 self.plan_cur.execute(exec_str)
 
     def connect_apn_db(self, apn_table_name, database=None, _file=None):
@@ -246,13 +246,12 @@ class PlanToMatplan(object):
             while not add_to_dict and (count < 10):
                 if ((orig_maz in self.valid_maz_list) and (dest_maz in self.valid_maz_list)) or (actor_id in self.actor_dict):
                     if (actor_id in self.actor_dict) and (count == 0):
-                        prev_act = prev_act
                         orig_apn = prev_act['destAPN']
                         prior_maz = prev_act['origMaz']
-                        orig_x = prev_act['destX']
-                        orig_y = prev_act['destY']
-                        prior_x = prev_act['destX']
-                        prior_y = prev_act['destY']
+                        orig_x = prev_act['destCoord_x']
+                        orig_y = prev_act['destCoord_y']
+                        prior_x = prev_act['destCoord_x']
+                        prior_y = prev_act['destCoord_y']
 
                     else:
                         exec_str = f"SELECT * FROM {apn_table_name} WHERE {apn_selector} = {orig_maz}"
@@ -302,27 +301,11 @@ class PlanToMatplan(object):
                     add_to_dict = True
 
             if add_to_dict:
-                # travel_time = (float(row[9]) * (30 * 60) + (4.5 * 60 * 60)) / 60
-                buffer = 60*4.5
-                depart_time = float(row[7]) + buffer
-                depart_hr = math.floor(depart_time / 60)
-                depart_min = math.floor(depart_time - (depart_hr * 60))
-                depart_sec = math.floor((depart_time - (depart_hr * 60) - depart_min) * 60) 
-                depart_time_str = f"{depart_hr}:{depart_min}:{depart_sec}"
-
-                arrive_time = float(row[9]) + buffer
-                arrive_hr = math.floor(arrive_time / 60)
-                arrive_min = math.floor(arrive_time - (arrive_hr * 60))
-                arrive_sec = math.floor((arrive_time - (arrive_hr * 60) - arrive_min) * 60) 
-                arrive_time_str = f"{arrive_hr}:{arrive_min}:{arrive_sec}"
-
-                at_dest_time = float(row[10]) + buffer
-                at_dest_hr = math.floor(at_dest_time / 60)
-                at_dest_min = math.floor(at_dest_time - (at_dest_hr * 60))
-                at_dest_sec = math.floor((at_dest_time - (at_dest_hr * 60) - at_dest_min) * 60) 
-                at_dest_time_str = f"{at_dest_hr}:{at_dest_min}:{at_dest_sec}"
-
-                self.actor_dict[row[1]].append({'origAPN': orig_apn,
+                earliest_MAG = float(4.5 * 60)
+                depart_time_in_secs = float(row[7]) * 60 + earliest_MAG
+                arrive_time_in_secs = float(row[9]) * 60 + earliest_MAG
+                at_dest_time_in_secs = float(row[10]) * 60
+                act_dict = {'origAPN': orig_apn,
                                                 'destAPN':dest_apn,
                                                 'origCoord_x': orig_x,
                                                 'origCoord_y': orig_y,
@@ -331,9 +314,13 @@ class PlanToMatplan(object):
                                                 'mode':self.mode_dict[str(row[6])],
                                                 'origPurp': str(row[4]),
                                                 'destPurp': str(row[5]),
-                                                'arrivalTime': arrive_time_str,
-                                                'finalDepartMin': depart_time_str,
-                                                'timeAtDest': at_dest_time_str})
+                                                'arrivalTimeSec': arrive_time_in_secs,
+                                                'finalDepartTimeSec': depart_time_in_secs,
+                                                'timeAtDestSec': at_dest_time_in_secs}
+                prev_act = act_dict
+                prev_act['origMaz'] = row[2]
+                self.actor_dict[row[1]].append(act_dict)
+                
             count = 0
 
     def plan_to_sql(self):
@@ -352,13 +339,10 @@ class PlanToMatplan(object):
                             'mode': str(y['mode']),
                             'origPurp': str(y['origPurp']),
                             'destPurp': str(y['destPurp']),
-                            'arrivalTime': y['arrivalTime'],
-                            'finalDepartMin': y['finalDepartMin'],
-                            'timeAtDest': y['timeAtDest']}
-                exec_str = (f"INSERT INTO {self.plan_table_name} "
-                            "(pid, origAPN, destAPN, origCoord_x, origCoord_y, destCoord_x, destCoord_y, "
-                            "mode, origPurp, destPurp, arrivalTime, finalDepartMin, timeAtDest) VALUES"
-                            "(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)")
+                            'finalDepartTimeSec': y['finalDepartTimeSec'],
+                            'arrivalTimeSec': y['arrivalTimeSec'],
+                            'timeAtDestSec': y['timeAtDestSec']}
+                exec_str = (f"INSERT INTO {self.plan_table_name} VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)")
                 self.plan_cur.execute(exec_str, tuple(data_dict.values()))
             self.plan_conn.commit()
         self.plan_conn.close()
@@ -379,9 +363,9 @@ class PlanToMatplan(object):
                             y['mode'],
                             y['origPurp'],
                             y['destPurp'],
-                            y['arrivalTime'],
-                            y['finalDepartMin'],
-                            y['timeAtDest'])
+                            y['finalDepartTimeSec'],
+                            y['arrivalTimeSec'],
+                            y['timeAtDestSec'])
                     handle.write(x)
 
 if __name__ == "__main__":
@@ -403,5 +387,5 @@ if __name__ == "__main__":
     # example.load_plans_from_json( JSON FILE HERE)
     # example.load_plans_from_sqlite("actor_plan.db", "trips")
     example.maz_to_plan_coords(example.apn_table_name, "maz")
-    # example.plan_to_txt_file("Plans_from_PlanToMatplan.txt")
+    example.plan_to_txt_file("Plans_from_PlanToMatplan.txt")
     example.plan_to_sql()
