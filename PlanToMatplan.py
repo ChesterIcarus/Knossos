@@ -6,7 +6,7 @@ import pickle
 import sqlite3 as sql
 import MySQLdb as mysql
 import getpass
-import numpy
+import numpy as np
 # from __init__ import bounding_for_maz
 from collections import defaultdict
 from shapely.geometry import shape, polygon
@@ -79,7 +79,7 @@ class PlanToMatplan(object):
             self.apn_cur = self.apn_conn.cursor()
             self.apn_table_name = apn_table_name
 
-    def bounded_maz_creation(self, preprocessed_files, output_file, maz_file=None, maz_in_memory=None, overwrite=False, linked_dict=None):
+    def bounded_maz_creation(self, preprocessed_files, output_file, maz_file=None, maz_in_memory=None, overwrite=False, linked_dict=None, bounding=None):
         self.valid_maz_list = list()
         self.maz_dict = dict()
         if (preprocessed_files == None):
@@ -92,7 +92,14 @@ class PlanToMatplan(object):
                 raise ValueError(None)
             
             all_in_bounding = True
-            bounding_for_maz = polygon.LinearRing([(649054, 896498), (649192, 888749), (665535, 896129), (663998, 889026)])
+            if bounding is None:
+                bounding_for_maz = polygon.LinearRing([
+                    (649054, 896498),
+                    (649192, 888749),
+                    (665535, 896129),
+                    (663998, 889026)])
+            else:
+                bounding_for_maz = polygon.LinearRing(bounding)
 
             for index, maz in enumerate(maz_set['features']):
                 try:
@@ -149,66 +156,6 @@ class PlanToMatplan(object):
         cursor.execute(rows_query)
         self.plan_rows = cursor.fetchall()
 
-    def maz_to_plan(self, apn_table_name, apn_selector):
-        orig_apn = None
-        dest_apn = None
-        count = 0
-        for row in self.plan_rows:
-            
-            # Testing if maz is in valid defined subset
-            while (orig_apn == dest_apn) and (count < 10):
-                if ((row[2] in self.valid_maz_list) and (row[3] in self.valid_maz_list)) or (row[1] in self.actor_dict):
-                    if (row[1] in self.actor_dict) and (count == 0):
-                        orig_apn = prev_act['destAPN']
-                        prior_maz = prev_act['origMaz']
-
-                    else:
-                        exec_str = f"SELECT * FROM {apn_table_name} WHERE {apn_selector} = {row[2]}"
-                        orig_apn = self.apn_cur.execute(exec_str).fetchall()
-                        if len(orig_apn) <= 0:
-                            orig_apn = None;
-                            break
-                        orig_apn = orig_apn[numpy.random.randint(-1, len(orig_apn)-1)][0]
-
-                    if row[3] not in self.valid_maz_list:
-                        exec_str = f"SELECT * FROM {apn_table_name} WHERE {apn_selector} = {prior_maz}"
-                        dest_apn = self.apn_cur.execute(exec_str).fetchall()
-                        if len(dest_apn) <= 0:
-                            dest_apn = None
-                            break
-                        dest_apn = dest_apn[numpy.random.randint(-1, len(dest_apn)-1)][0]
-
-                    else:
-                        exec_str = f"SELECT * FROM {apn_table_name} WHERE {apn_selector} = {row[3]}"
-                        dest_apn = self.apn_cur.execute(exec_str).fetchall()
-                        if len(dest_apn) <= 0:
-                            dest_apn = None
-                            break
-                        dest_apn = dest_apn[numpy.random.randint(-1, len(dest_apn)-1)][0]
-
-                else:
-                    break
-                count += 1
-
-            if (dest_apn != orig_apn) and (dest_apn != None) and (orig_apn != None):
-                depart_time = (float(row[7]) * (30 * 60) + (4.5 * 60 * 60)) / 60
-                travel_time = (float(row[9]) * (30 * 60) + (4.5 * 60 * 60)) / 60
-                arrive_time = (float(row[10]) * (30 * 60) + (4.5 * 60 * 60)) / 60
-                self.actor_dict[row[1]].append({'origAPN': orig_apn,
-                                                'destAPN':dest_apn,
-                                                'mode':self.mode_dict[str(row[6])],
-                                                'origPurp': str(row[4]),
-                                                'destPurp': str(row[5]),
-                                                'finalDepartMin': str(depart_time),
-                                                'timeAtDest': None,
-                                                'origMaz':int(row[2]) if (row[2] in self.valid_maz_list) else prior_maz,
-                                                'travelMin': travel_time,
-                                                'tripDistance': float(row[8])
-                                                })
-            count = 0
-            orig_apn = None
-            dest_apn = None
-
     def maz_to_plan_coords(self, apn_table_name, apn_selector):
         ''' 
             Plan DB schema for file actor_plan.db, on table "trips"
@@ -241,8 +188,8 @@ class PlanToMatplan(object):
             actor_id = row[1]
             orig_maz = int(row[2])
             dest_maz = int(row[3])
-            # print(actor_id, orig_maz, dest_maz)
-            # input()
+            prev_act = dict()
+
             while not add_to_dict and (count < 10):
                 if ((orig_maz in self.valid_maz_list) and (dest_maz in self.valid_maz_list)) or (actor_id in self.actor_dict):
                     if (actor_id in self.actor_dict) and (count == 0):
@@ -261,7 +208,7 @@ class PlanToMatplan(object):
                             orig_apn = None;
                             break
                         else:
-                            rand_row = numpy.random.randint(-1, len(orig_apn_rows)-1)
+                            rand_row = np.random.randint(-1, len(orig_apn_rows)-1)
                             orig_apn = orig_apn_rows[rand_row][2]
                             orig_x = orig_apn_rows[rand_row][0]
                             orig_y = orig_apn_rows[rand_row][1]
@@ -274,7 +221,7 @@ class PlanToMatplan(object):
                             dest_apn = None
                             break
                         else:
-                            rand_row = numpy.random.randint(-1, len(dest_apn_rows)-1)
+                            rand_row = np.random.randint(-1, len(dest_apn_rows)-1)
                             dest_apn = dest_apn_rows[rand_row][2]
                             dest_x = dest_apn_rows[rand_row][0]
                             dest_y = dest_apn_rows[rand_row][1]
@@ -287,7 +234,7 @@ class PlanToMatplan(object):
                             dest_apn = None
                             break
                         else:
-                            rand_row = numpy.random.randint(-1, len(dest_apn_rows)-1)
+                            rand_row = np.random.randint(-1, len(dest_apn_rows)-1)
                             dest_apn = dest_apn_rows[rand_row][2]
                             dest_x = dest_apn_rows[rand_row][0]
                             dest_y = dest_apn_rows[rand_row][1]
@@ -383,7 +330,12 @@ if __name__ == "__main__":
 
     example.load_plans_from_db(cursor=cur, pid_maz_table_name="Example")
     ppf_dict = {'dict': './dict_PlanToMatplan.txt', 'list': './list_PlanToMatplan.txt'}
-    example.bounded_maz_creation(preprocessed_files=None, maz_file="./maz_dict.geojson", output_file="PlanToMatplan.txt", overwrite=True)
+    full_ariz = [
+        (291681.866638, 2147002.203025),
+        (1114836.32474, 2099088.372318),
+        (1092055.717785, 913579.224235),
+        (341912.702254, 946252.321431)]
+    example.bounded_maz_creation(preprocessed_files=None, maz_file="./maz_dict.geojson", output_file="PlanToMatplan.txt", overwrite=True, bounding=full_ariz)
     # example.load_plans_from_json( JSON FILE HERE)
     # example.load_plans_from_sqlite("actor_plan.db", "trips")
     example.maz_to_plan_coords(example.apn_table_name, "maz")

@@ -142,6 +142,12 @@ if __name__ == "__main__":
     example.load_parcel(files['parcel'])
     example.set_crs_from_parcel()
     example.connect_database(db_param, table_name="Example", drop=True)
-    example.set_bounding()
+    # 258710.1067, 122857.2981, 1157943.9948, 2186600.2033
+    full_ariz = [
+        (291681.866638, 2147002.203025),
+        (1114836.32474, 2099088.372318),
+        (1092055.717785, 913579.224235),
+        (341912.702254, 946252.321431)]
+    example.set_bounding(full_ariz)
     example.find_maz_in_bounds()
     example.assign_maz_per_apn(True)
