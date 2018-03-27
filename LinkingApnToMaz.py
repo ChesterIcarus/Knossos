@@ -73,8 +73,10 @@ class LinkingApnToMaz:
         # TODO: Set default such that it includes all of United States
         self.bounded_eval = True
         if apn_bounding:
-            bounding_from_inp = polygon.Polygon(apn_bounding['poly_coords'], apn_bounding['poly_holes'] if ('poly_holes' in apn_bounding.keys()) else None)
-            proj_to_map = partial(pyproj.transform, pyproj.Proj(init=apn_bounding['poly_crs']), pyproj.Proj(init='epsg:{}'.format(self.crs)))
+            bounding_from_inp = polygon.Polygon(apn_bounding['poly_coords'])
+            proj_to_map = partial(pyproj.transform,
+                                  pyproj.Proj(init=apn_bounding['poly_crs']),
+                                  pyproj.Proj(init='epsg:{}'.format(self.crs)))
             bounding_for_maz = transform(proj_to_map, bounding_from_inp)
 
         else:
