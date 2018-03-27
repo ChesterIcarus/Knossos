@@ -86,7 +86,7 @@ class LinkingApnToMaz:
                                                 (1092055.717785, 913579.224235),
                                                 (341912.702254, 946252.321431)])
             proj_to_map = pyproj.Proj('+proj=tmerc +lat_0=31 +lon_0=-111.9166666666667 +k=0.9999 +x_0=213360 +y_0=0 +datum=NAD83 +units=ft +no_defs') 
-            proj_to_map = partial(pyproj.transform, proj_to_map, pyproj.Proj(init='epsg:{}'.format(self.crs)))
+            proj_to_map = partial(pyproj.transform, proj_to_map, pyproj.Proj(init='epsg:4326'))
             bounding_for_maz = transform(proj_to_map, default_bounding)
         self.bounding_for_maz = bounding_for_maz
 
