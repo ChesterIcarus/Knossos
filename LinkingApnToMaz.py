@@ -1,4 +1,4 @@
-from shapely.geometry import shape, polygon
+from shapely.geometry import shape, polygon, LineString
 from __init__ import bounding_for_maz
 import json
 import pyproj
@@ -93,16 +93,14 @@ class LinkingApnToMaz:
     def find_maz_in_bounds(self):
         self.bounded_maz_set = {'features': list()}
         for maz in self.maz_set['features']:
-            try:
-                temp_shape = shape(maz['geometry'])
+            temp_shape = shape(maz['geometry'])
+            if not LineString(temp_shape.exterior.coords).is_simple:
                 try:
                     temp_point = temp_shape.representative_point()
                 except ValueError:
                     temp_point = temp_shape
                 if temp_point.within(self.bounding_for_maz):
                     self.bounded_maz_set['features'].append(maz)
-            except TopologyException:
-                pass
 
     def assign_maz_per_apn(self, write_to_database=False):
         # "Meat" of the module, connection MAZ, APN, and osm_id
@@ -164,4 +162,4 @@ if __name__ == "__main__":
     # bounding_coords = {'poly_coords': full_ariz, 'poly_crs': 'epsg:2223'}
     example.set_bounding()
     example.find_maz_in_bounds()
-    example.assign_maz_per_apn(True)
+    example.assign_maz_per_apn(write_to_database=True)
