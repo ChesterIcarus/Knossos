@@ -118,21 +118,24 @@ class LinkingApnToMaz:
                     temp_point = temp_shape
                 except TypeError:
                     pass
-            if temp_point.within(self.bounding_for_maz) or (self.bounded_eval is False):
-                for bounding in maz_set_local['features']:
-                    bounding_shape = shape(bounding['geometry'])
-                    if temp_point.within(bounding_shape):
-                        insert_tuple = tuple([feature['geometry']['coordinates'][0],
-                                            feature['geometry']['coordinates'][1],
-                                            feature['properties']['APN'],
-                                            bounding['properties']['MAZ_ID_10']])
-                        if write_to_database is True:
-                            exec_str = ("INSERT INTO {} values {};").format(self.table_name, insert_tuple)
-                            self.cur.execute(exec_str)
-                        if bounding['properties']['MAZ_ID_10'] in self.apn_maz:
-                            self.apn_maz[bounding['properties']['MAZ_ID_10']].append(bounding)
-                        else:
-                            self.apn_maz[bounding['properties']['MAZ_ID_10']] = [list(insert_tuple)]
+            try:
+                if temp_point.within(self.bounding_for_maz) or (self.bounded_eval is False):
+                    for bounding in maz_set_local['features']:
+                        bounding_shape = shape(bounding['geometry'])
+                        if temp_point.within(bounding_shape):
+                            insert_tuple = tuple([feature['geometry']['coordinates'][0],
+                                                feature['geometry']['coordinates'][1],
+                                                feature['properties']['APN'],
+                                                bounding['properties']['MAZ_ID_10']])
+                            if write_to_database is True:
+                                exec_str = ("INSERT INTO {} values {};").format(self.table_name, insert_tuple)
+                                self.cur.execute(exec_str)
+                            if bounding['properties']['MAZ_ID_10'] in self.apn_maz:
+                                self.apn_maz[bounding['properties']['MAZ_ID_10']].append(bounding)
+                            else:
+                                self.apn_maz[bounding['properties']['MAZ_ID_10']] = [list(insert_tuple)]
+            except TopologyException:
+                pass
 
         if write_to_database is True:
             self.conn.commit()
