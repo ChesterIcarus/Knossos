@@ -149,6 +149,6 @@ if __name__ == "__main__":
         (1092055.717785, 913579.224235),
         (341912.702254, 946252.321431)]
     bounding_coords = {'poly_coords': full_ariz, 'poly_crs': 'epsg:2223'}
-    example.set_bounding(full_ariz)
+    example.set_bounding(bounding_coords)
     example.find_maz_in_bounds()
     example.assign_maz_per_apn(True)
