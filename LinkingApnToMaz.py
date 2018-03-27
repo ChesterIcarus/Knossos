@@ -93,13 +93,16 @@ class LinkingApnToMaz:
     def find_maz_in_bounds(self):
         self.bounded_maz_set = {'features': list()}
         for maz in self.maz_set['features']:
-            temp_shape = shape(maz['geometry'])
             try:
-                temp_point = temp_shape.representative_point()
-            except ValueError:
-                temp_point = temp_shape
-            if temp_point.within(self.bounding_for_maz):
-                self.bounded_maz_set['features'].append(maz)
+                temp_shape = shape(maz['geometry'])
+                try:
+                    temp_point = temp_shape.representative_point()
+                except ValueError:
+                    temp_point = temp_shape
+                if temp_point.within(self.bounding_for_maz):
+                    self.bounded_maz_set['features'].append(maz)
+            except TopologyException:
+                pass
 
     def assign_maz_per_apn(self, write_to_database=False):
         # "Meat" of the module, connection MAZ, APN, and osm_id
