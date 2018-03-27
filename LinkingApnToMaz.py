@@ -125,7 +125,7 @@ class LinkingApnToMaz:
                 try:
                     temp_point = temp_shape
                 except TypeError:
-                    pass
+                    continue
             try:
                 if temp_point.within(self.bounding_for_maz) or (self.bounded_eval is False):
                     for bounding in maz_set_local['features']:
@@ -135,14 +135,15 @@ class LinkingApnToMaz:
                                                 feature['geometry']['coordinates'][1],
                                                 feature['properties']['APN'],
                                                 bounding['properties']['MAZ_ID_10']]))
-                            if bounding['properties']['MAZ_ID_10'] in self.apn_maz:
-                                self.apn_maz[bounding['properties']['MAZ_ID_10']].append(bounding)
-                            else:
-                                self.apn_maz[bounding['properties']['MAZ_ID_10']] = [list(insert_tuple)]
-            except Exception: pass
+                            # if bounding['properties']['MAZ_ID_10'] in self.apn_maz:
+                                # self.apn_maz[bounding['properties']['MAZ_ID_10']].append(bounding)
+                            # else:
+                                # self.apn_maz[bounding['properties']['MAZ_ID_10']] = [list(self.insert_tuple)]
+            except Exception: continue
 
         if write_to_database is True:
             print("Writing to database")
+            print(len(self.db_insert))
             self.cur.executemany(f"INSERT INTO {self.db_name}.{self.table_name} values (%s,%s,%s,%s)", self.db_insert)
             self.conn.commit()
             self.conn.close()
