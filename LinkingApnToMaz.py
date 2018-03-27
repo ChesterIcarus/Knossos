@@ -20,10 +20,12 @@ class LinkingApnToMaz:
         self.crs = None
         self.conn = None
         self.cur = None
+        self.db_name = None
         self.table_name = None
         self.bounding_for_maz = None
         self.bounded_maz_set = None
         self.bounded_eval = False
+        self.db_insert = list()
 
     # Loading maz data for rest of class data
     def load_maz(self, filepath):
@@ -56,6 +58,7 @@ class LinkingApnToMaz:
         Output is stored in the form: (X Coordinate, Y Coordinate, APN Identifier, MAZ Identifier)'''
 
         self.table_name = table_name
+        self.db_name = database['db']
         try:
             self.conn = mysql.connect(**database)
             print("System Level DB created")
@@ -97,13 +100,12 @@ class LinkingApnToMaz:
         self.bounded_maz_set = {'features': list()}
         for maz in self.maz_set['features']:
             temp_shape = shape(maz['geometry'])
-            if not LineString(temp_shape.exterior.coords).is_simple:
-                try:
-                    temp_point = temp_shape.representative_point()
-                except ValueError:
-                    temp_point = temp_shape
-                if temp_point.within(self.bounding_for_maz):
-                    self.bounded_maz_set['features'].append(maz)
+            try:
+                temp_point = temp_shape.representative_point()
+            except ValueError:
+                temp_point = temp_shape
+            if temp_point.within(self.bounding_for_maz):
+                self.bounded_maz_set['features'].append(maz)
         print("Found MAZ\'s in bounds")
 
     def assign_maz_per_apn(self, write_to_database=False):
@@ -129,22 +131,19 @@ class LinkingApnToMaz:
                     for bounding in maz_set_local['features']:
                         bounding_shape = shape(bounding['geometry'])
                         if temp_point.within(bounding_shape):
-                            insert_tuple = tuple([feature['geometry']['coordinates'][0],
+                            self.db_insert.append(tuple([feature['geometry']['coordinates'][0],
                                                 feature['geometry']['coordinates'][1],
                                                 feature['properties']['APN'],
-                                                bounding['properties']['MAZ_ID_10']])
-                            if write_to_database is True:
-                                exec_str = ("INSERT INTO {} values {};").format(self.table_name, insert_tuple)
-                                self.cur.execute(exec_str)
+                                                bounding['properties']['MAZ_ID_10']]))
                             if bounding['properties']['MAZ_ID_10'] in self.apn_maz:
                                 self.apn_maz[bounding['properties']['MAZ_ID_10']].append(bounding)
                             else:
                                 self.apn_maz[bounding['properties']['MAZ_ID_10']] = [list(insert_tuple)]
-            except TopologyException:
-                pass
+            except Exception: pass
 
         if write_to_database is True:
             print("Writing to database")
+            self.cur.executemany(f"INSERT INTO {self.db_name}.{self.table_name} values (%s,%s,%s,%s)", self.db_insert)
             self.conn.commit()
             self.conn.close()
         print("MAZ\'s assigned")
