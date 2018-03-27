@@ -80,7 +80,10 @@ class LinkingApnToMaz:
             bounding_for_maz = transform(proj_to_map, bounding_from_inp)
 
         else:
-            default_bounding = polygon.Polygon([(649054, 896498), (649192, 888749), (665535, 896129), (663998, 889026)])
+            default_bounding = polygon.Polygon([(291681.866638, 2147002.203025),
+                                                (1114836.32474, 2099088.372318),
+                                                (1092055.717785, 913579.224235),
+                                                (341912.702254, 946252.321431)])
             proj_to_map = partial(pyproj.transform, pyproj.Proj(init='epsg:2223'), pyproj.Proj(init='epsg:{}'.format(self.crs)))
             bounding_for_maz = transform(proj_to_map, default_bounding)
         self.bounding_for_maz = bounding_for_maz
@@ -145,12 +148,12 @@ if __name__ == "__main__":
     example.set_crs_from_parcel()
     example.connect_database(db_param, table_name="Example", drop=True)
     # 258710.1067, 122857.2981, 1157943.9948, 2186600.2033
-    full_ariz = [
-        (291681.866638, 2147002.203025),
-        (1114836.32474, 2099088.372318),
-        (1092055.717785, 913579.224235),
-        (341912.702254, 946252.321431)]
-    bounding_coords = {'poly_coords': full_ariz, 'poly_crs': 'epsg:2223'}
-    example.set_bounding(bounding_coords)
+    # full_ariz = [
+    #     (291681.866638, 2147002.203025),
+    #     (1114836.32474, 2099088.372318),
+    #     (1092055.717785, 913579.224235),
+    #     (341912.702254, 946252.321431)]
+    # bounding_coords = {'poly_coords': full_ariz, 'poly_crs': 'epsg:2223'}
+    example.set_bounding()
     example.find_maz_in_bounds()
     example.assign_maz_per_apn(True)
