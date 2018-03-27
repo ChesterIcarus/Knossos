@@ -72,6 +72,7 @@ class LinkingApnToMaz:
         '''Allows the user to specify a subsection of the entered area to evaluate'''
         # TODO: Set default such that it includes all of United States
         self.bounded_eval = True
+        print("Setting boundries for evaluations")
         if apn_bounding:
             bounding_from_inp = polygon.Polygon(apn_bounding['poly_coords'])
             # proj_to_map = partial(pyproj.transform,
@@ -89,8 +90,10 @@ class LinkingApnToMaz:
             proj_to_map = partial(pyproj.transform, proj_to_map, pyproj.Proj(init='epsg:4326'))
             bounding_for_maz = transform(proj_to_map, default_bounding)
         self.bounding_for_maz = bounding_for_maz
+        print("Boundries set!")
 
     def find_maz_in_bounds(self):
+        print("Finding MAZ in bounds")
         self.bounded_maz_set = {'features': list()}
         for maz in self.maz_set['features']:
             temp_shape = shape(maz['geometry'])
@@ -101,10 +104,12 @@ class LinkingApnToMaz:
                     temp_point = temp_shape
                 if temp_point.within(self.bounding_for_maz):
                     self.bounded_maz_set['features'].append(maz)
+        print("Found MAZ\'s in bounds")
 
     def assign_maz_per_apn(self, write_to_database=False):
         # "Meat" of the module, connection MAZ, APN, and osm_id
         # This creates the output to be used in agent plan generation
+        print("Assigning MAZ per APN")
         if self.bounded_eval:
             maz_set_local = self.bounded_maz_set
         else:
@@ -139,9 +144,10 @@ class LinkingApnToMaz:
                 pass
 
         if write_to_database is True:
+            print("Writing to database")
             self.conn.commit()
             self.conn.close()
-
+        print("MAZ\'s assigned")
 
 if __name__ == "__main__":
     files = {'parcel': 'Parcels_All/all_parcel.geojson', 'maz':'MAZ/maz.geojson'}
