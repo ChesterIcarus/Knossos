@@ -133,7 +133,7 @@ class LinkingApnToMaz:
 
 
 if __name__ == "__main__":
-    files = {'parcel': '../Shapefiles/Cleaned/test_dirty_point.geojson', 'maz':'MAZ/maz.geojson'}
+    files = {'parcel': 'Parcels_All/all_parcel.geojson', 'maz':'MAZ/maz.geojson'}
     pw = getpass.getpass()
     db_param = {'user':'root', 'db':'LinkingApnToMaz', 'host':'localhost', 'password': pw}
 
