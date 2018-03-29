@@ -69,9 +69,6 @@ class LinkingApnToMaz:
             self.cur.execute(exec_str)
             self.conn.commit()
 
-    def maricopa_poly_creation(self, filepath):
-        
-
     def set_bounding(self, filepath):
         '''Allows the user to specify a subsection of the entered area to evaluate'''
         self.bounded_eval = True
