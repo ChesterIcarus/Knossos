@@ -78,7 +78,7 @@ class LinkingApnToMaz:
         #                                     (341912.702254, 946252.321431)])
         with open(filepath, 'r') as handle:
             data = json.load(handle)
-        apn_bounding = polygon.Polygon(data['geometries'][0]['coordinates'][0][0])
+        apn_bounding = polygon.Polygon(data['geometries'][0]['coordinates'])
         print("Setting boundries for evaluations")
         epsg_2223 = pyproj.Proj('+proj=tmerc +lat_0=31 +lon_0=-111.9166666666667'+
                                     ' +k=0.9999 +x_0=213360 +y_0=0 +ellps=GRS80 '+
