@@ -115,7 +115,7 @@ class LinkingApnToMaz:
         print("Assigning MAZ per APN")
         print(f"There are {len(self.parcel_set['features'])} total features")
         maz_shape_list = self.create_maz_shape_list(self.bounded_maz_set)
-        
+        print(f"There are {len(maz_shape_list)} MAZ\'s")
         for feature in self.parcel_set['features']:
             temp_shape = shape(feature['geometry'])
             try:
