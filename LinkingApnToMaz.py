@@ -74,7 +74,7 @@ class LinkingApnToMaz:
         '''Allows the user to specify a subsection of the entered area to evaluate'''
         self.bounded_eval = True
         with open(filepath, 'r') as handle:
-            data = load(filepath)
+            data = load(handle)
         print("Setting boundries for evaluations")
         # epsg_2223 = pyproj.Proj('+proj=tmerc +lat_0=31 +lon_0=-111.9166666666667'+
                                     # ' +k=0.9999 +x_0=213360 +y_0=0 +ellps=GRS80 '+
