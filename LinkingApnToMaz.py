@@ -112,7 +112,7 @@ class LinkingApnToMaz:
 
         for feature in self.parcel_set['features']:
             temp_shape = shape(feature['geometry'])
-            try131:
+            try:
                 temp_point = temp_shape.representative_point()
             except (TypeError, ValueError):
                 try:
