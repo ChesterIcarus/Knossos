@@ -4,7 +4,7 @@ import getpass
 import sqlite3 as sql
 import MySQLdb as mysql
 from functools import partial
-import shapely
+from shapely.wkt import load
 from shapely.ops import transform
 from shapely.geometry import shape, polygon, LineString
 
@@ -74,13 +74,13 @@ class LinkingApnToMaz:
         '''Allows the user to specify a subsection of the entered area to evaluate'''
         self.bounded_eval = True
         with open(filepath, 'r') as handle:
-            data = shapely.wkt.load(filepath)
+            data = load(filepath)
         print("Setting boundries for evaluations")
-        epsg_2223 = pyproj.Proj('+proj=tmerc +lat_0=31 +lon_0=-111.9166666666667'+
-                                    ' +k=0.9999 +x_0=213360 +y_0=0 +ellps=GRS80 '+
-                                    '+towgs84=0,0,0,0,0,0,0 +units=ft +no_defs')
-        epsg_4326 = pyproj.Proj(init='epsg:4326')
-        converted_data = list()
+        # epsg_2223 = pyproj.Proj('+proj=tmerc +lat_0=31 +lon_0=-111.9166666666667'+
+                                    # ' +k=0.9999 +x_0=213360 +y_0=0 +ellps=GRS80 '+
+                                    # '+towgs84=0,0,0,0,0,0,0 +units=ft +no_defs')
+        # epsg_4326 = pyproj.Proj(init='epsg:4326')
+        # converted_data = list()
         
         project = partial(
                     pyproj.transform,
@@ -157,6 +157,6 @@ if __name__ == "__main__":
     #     (1092055.717785, 913579.224235),
     #     (341912.702254, 946252.321431)]
     # bounding_coords = {'poly_coords': full_ariz, 'poly_crs': 'epsg:2223'}
-    example.set_bounding('maricopa_poly.geojson')
+    example.set_bounding('maricopa_poly.wkt.txt')
     example.find_maz_in_bounds()
     example.assign_maz_per_apn(write_to_database=True)
