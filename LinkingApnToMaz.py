@@ -81,10 +81,10 @@ class LinkingApnToMaz:
         epsg_4326 = pyproj.Proj(init='epsg:4326')
         converted_data = list()
 
-        for point in data['geometries'][0]['coordinates']:
-            converted_data.append(pyproj.transform(epsg_4326, epsg_2223, point[0], point[1]))
+        for point in data['geometry'][0]['coordinates']:
+            point = pyproj.transform(epsg_4326, epsg_2223, point[0], point[1])
 
-        self.bounding_for_maz = polygon.Polygon(converted_data)
+        self.bounding_for_maz = polygon.Polygon(data['Feature']['geometry'])
         print("Boundries set!")
 
     def find_maz_in_bounds(self):
