@@ -112,7 +112,7 @@ class LinkingApnToMaz:
 
         for feature in self.parcel_set['features']:
             temp_shape = shape(feature['geometry'])
-            try:
+            try131:
                 temp_point = temp_shape.representative_point()
             except (TypeError, ValueError):
                 try:
@@ -127,10 +127,10 @@ class LinkingApnToMaz:
                                             feature['properties']['APN'],
                                             bounding_shape[1]])
                         insert_list.append(insert_tuple)
-                        if bounding['properties']['MAZ_ID_10'] in self.apn_maz:
-                            self.apn_maz[bounding_shape[1]].append(bounding)
-                        else:
-                            self.apn_maz[bounding_shape[1]] = [list(insert_tuple)]
+                        # if bounding['properties']['MAZ_ID_10'] in self.apn_maz:
+                        #     self.apn_maz[bounding_shape[1]].append(bounding)
+                        # else:
+                        #     self.apn_maz[bounding_shape[1]] = [list(insert_tuple)]
 
         if write_to_database is True:
             self.cur.executemany(f"INSERT INTO {self.table_name} values (%s,%s,%s,%s)", tuple(insert_list))
