@@ -96,7 +96,7 @@ class LinkingApnToMaz:
             temp_point = temp_shape.representative_point()
             if temp_point.within(self.bounding_for_maz):
                 self.bounded_maz_set['features'].append(maz)
-        print("Found MAZ\'s in bounds")
+        print(f"Found {len(self.bounded_maz_set['features'])} MAZ\'s in bounds")
 
     def create_maz_shape_list(self, maz_list):
         ret_list = list()
