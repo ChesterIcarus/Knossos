@@ -78,14 +78,17 @@ class LinkingApnToMaz:
         #                                     (341912.702254, 946252.321431)])
         with open(filepath, 'r') as handle:
             data = json.load(handle)
-        apn_bounding = polygon.Polygon(data['geometries'][0]['coordinates'])
         print("Setting boundries for evaluations")
         epsg_2223 = pyproj.Proj('+proj=tmerc +lat_0=31 +lon_0=-111.9166666666667'+
                                     ' +k=0.9999 +x_0=213360 +y_0=0 +ellps=GRS80 '+
                                     '+towgs84=0,0,0,0,0,0,0 +units=ft +no_defs')
-        
-        proj_func = partial(pyproj.transform, epsg_2223, pyproj.Proj(init='epsg:4326'))
-        self.bounding_for_maz = transform(proj_func, apn_bounding)
+        epsg_4326 = pyproj.Proj(init='epsg:4326')
+        converted_data = list()
+
+        for point in data['geometries'][0]['coordinates']:
+            converted_data.append(pyproj.transform(epsg_4326, epsg_2223, point[0], point[1]))
+
+        apn_bounding = polygon.Polygon(converted_data)
         print("Boundries set!")
 
     def find_maz_in_bounds(self):
