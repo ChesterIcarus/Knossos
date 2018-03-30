@@ -4,6 +4,7 @@ import getpass
 import sqlite3 as sql
 import MySQLdb as mysql
 from functools import partial
+import shapely
 from shapely.ops import transform
 from shapely.geometry import shape, polygon, LineString
 
@@ -73,18 +74,23 @@ class LinkingApnToMaz:
         '''Allows the user to specify a subsection of the entered area to evaluate'''
         self.bounded_eval = True
         with open(filepath, 'r') as handle:
-            data = json.load(handle)
+            data = shapely.wkt.load(filepath)
         print("Setting boundries for evaluations")
         epsg_2223 = pyproj.Proj('+proj=tmerc +lat_0=31 +lon_0=-111.9166666666667'+
                                     ' +k=0.9999 +x_0=213360 +y_0=0 +ellps=GRS80 '+
                                     '+towgs84=0,0,0,0,0,0,0 +units=ft +no_defs')
         epsg_4326 = pyproj.Proj(init='epsg:4326')
         converted_data = list()
+        
+        project = partial(
+                    pyproj.transform,
+                    pyproj.Proj(init='espg:4326'),
+                    pyproj.Proj(init='epsg:2223'))
+        self.bounding_for_maz = transform(project, data)
+        # for index, point in enumerate(data['geometry'][0]['coordinates']):
+        #     data['geometry'][0]['coordinates'][index] = pyproj.transform(epsg_4326, epsg_2223, point[0], point[1])
 
-        for index, point in enumerate(data['geometry'][0]['coordinates']):
-            data['geometry'][0]['coordinates'][index] = pyproj.transform(epsg_4326, epsg_2223, point[0], point[1])
-
-        self.bounding_for_maz = shape(data['geometry'][0])
+        # self.bounding_for_maz = shape(data['geometry'][0])
         print("Boundries set!")
 
     def find_maz_in_bounds(self):
