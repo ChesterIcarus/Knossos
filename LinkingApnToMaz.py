@@ -72,10 +72,6 @@ class LinkingApnToMaz:
     def set_bounding(self, filepath):
         '''Allows the user to specify a subsection of the entered area to evaluate'''
         self.bounded_eval = True
-        # default_bounding = polygon.Polygon([(291681.866638, 2147002.203025),
-        #                                     (1114836.32474, 2099088.372318),
-        #                                     (1092055.717785, 913579.224235),
-        #                                     (341912.702254, 946252.321431)])
         with open(filepath, 'r') as handle:
             data = json.load(handle)
         print("Setting boundries for evaluations")
@@ -107,9 +103,7 @@ class LinkingApnToMaz:
     def create_maz_shape_list(self, maz_list):
         ret_list = list()
         for maz in maz_list['features']:
-            try:
-                ret_list.append(tuple([shape(maz['geometry']), maz['properties']['MAZ_ID_10']]))
-            except (TypeError, ValueError): continue
+            ret_list.append(tuple([shape(maz['geometry']), maz['properties']['MAZ_ID_10']]))
         return ret_list
 
     def assign_maz_per_apn(self, write_to_database=False):
