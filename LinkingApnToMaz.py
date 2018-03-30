@@ -1,12 +1,15 @@
+from shapely.geometry import shape, polygon
+from __init__ import bounding_for_maz
 import json
 import pyproj
+# import pymysql
 import getpass
 import sqlite3 as sql
+# import pymysql as mysql
 import MySQLdb as mysql
 from functools import partial
-from shapely.wkt import load
 from shapely.ops import transform
-from shapely.geometry import shape, polygon, LineString
+
 
 class LinkingApnToMaz:
     def __init__(self):
@@ -17,13 +20,10 @@ class LinkingApnToMaz:
         self.crs = None
         self.conn = None
         self.cur = None
-        self.db_name = None
         self.table_name = None
         self.bounding_for_maz = None
         self.bounded_maz_set = None
-        self.bounded_maz_shapes = list()
         self.bounded_eval = False
-        self.db_insert = list()
 
     # Loading maz data for rest of class data
     def load_maz(self, filepath):
@@ -56,7 +56,6 @@ class LinkingApnToMaz:
         Output is stored in the form: (X Coordinate, Y Coordinate, APN Identifier, MAZ Identifier)'''
 
         self.table_name = table_name
-        self.db_name = database['db']
         try:
             self.conn = mysql.connect(**database)
             print("System Level DB created")
@@ -68,80 +67,73 @@ class LinkingApnToMaz:
             self.cur.execute(("DROP TABLE if exists {}").format(table_name))
             exec_str = ("CREATE table {0} (coordX FLOAT, coordY FLOAT, APN CHAR(12), maz INT UNSIGNED NOT NULL)").format(table_name)
             self.cur.execute(exec_str)
-            self.conn.commit()
 
-    def set_bounding(self, filepath):
+    def set_bounding(self, apn_bounding=None):
         '''Allows the user to specify a subsection of the entered area to evaluate'''
+        # TODO: Set default such that it includes all of United States
         self.bounded_eval = True
-        with open(filepath, 'r') as handle:
-            data = load(handle)
-        print("Setting boundries for evaluations")
-        # epsg_2223 = pyproj.Proj('+proj=tmerc +lat_0=31 +lon_0=-111.9166666666667'+
-                                    # ' +k=0.9999 +x_0=213360 +y_0=0 +ellps=GRS80 '+
-                                    # '+towgs84=0,0,0,0,0,0,0 +units=ft +no_defs')
-        # epsg_4326 = pyproj.Proj(init='epsg:4326')
-        # converted_data = list()
-        
-        project = partial(
-                    pyproj.transform,
-                    pyproj.Proj(init='espg:4326'),
-                    pyproj.Proj(init='epsg:2223'))
-        self.bounding_for_maz = transform(project, data)
-        # for index, point in enumerate(data['geometry'][0]['coordinates']):
-        #     data['geometry'][0]['coordinates'][index] = pyproj.transform(epsg_4326, epsg_2223, point[0], point[1])
+        if apn_bounding:
+            bounding_from_inp = polygon.Polygon(apn_bounding['poly_coords'], apn_bounding['poly_holes'] if ('poly_holes' in apn_bounding.keys()) else None)
+            proj_to_map = partial(pyproj.transform, pyproj.Proj(init=apn_bounding['poly_crs']), pyproj.Proj(init='epsg:{}'.format(self.crs)))
+            bounding_for_maz = transform(proj_to_map, bounding_from_inp)
 
-        # self.bounding_for_maz = shape(data['geometry'][0])
-        print("Boundries set!")
+        else:
+            default_bounding = polygon.Polygon([(649054, 896498), (649192, 888749), (665535, 896129), (663998, 889026)])
+            proj_to_map = partial(pyproj.transform, pyproj.Proj(init='epsg:2223'), pyproj.Proj(init='epsg:{}'.format(self.crs)))
+            bounding_for_maz = transform(proj_to_map, default_bounding)
+        self.bounding_for_maz = bounding_for_maz
 
     def find_maz_in_bounds(self):
-        print("Finding MAZ in bounds")
         self.bounded_maz_set = {'features': list()}
-        print(f"There are {len(self.maz_set['features'])} MAZ\'s before boundry operations")
         for maz in self.maz_set['features']:
             temp_shape = shape(maz['geometry'])
-            temp_point = temp_shape.representative_point()
+            try:
+                temp_point = temp_shape.representative_point()
+            except ValueError:
+                temp_point = temp_shape
             if temp_point.within(self.bounding_for_maz):
                 self.bounded_maz_set['features'].append(maz)
-        print(f"Found {len(self.bounded_maz_set['features'])} MAZ\'s in bounds")
-
-    def create_maz_shape_list(self, maz_list):
-        ret_list = list()
-        for maz in maz_list['features']:
-            ret_list.append(tuple([shape(maz['geometry']), maz['properties']['MAZ_ID_10']]))
-        return ret_list
 
     def assign_maz_per_apn(self, write_to_database=False):
         # "Meat" of the module, connection MAZ, APN, and osm_id
         # This creates the output to be used in agent plan generation
-        print("Assigning MAZ per APN")
-        print(f"There are {len(self.parcel_set['features'])} total features")
-        maz_shape_list = self.create_maz_shape_list(self.bounded_maz_set)
-        print(f"There are {len(maz_shape_list)} MAZ\'s")
+        if self.bounded_eval:
+            maz_set_local = self.bounded_maz_set
+        else:
+            maz_set_local = self.maz_set
 
         for feature in self.parcel_set['features']:
             temp_shape = shape(feature['geometry'])
             try:
                 temp_point = temp_shape.representative_point()
             except (TypeError, ValueError):
-                temp_point = temp_shape
-            if temp_point.within(self.bounding_for_maz):
-                for maz in maz_shape_list:
-                    if temp_point.within(maz[0]):
-                        self.db_insert.append(tuple([feature['geometry']['coordinates'][0],
-                                                    feature['geometry']['coordinates'][1],
-                                                    feature['properties']['APN'],
-                                                    maz[1]]))
+                try:
+                    temp_point = temp_shape
+                except TypeError:
+                    pass
+            if temp_point.within(self.bounding_for_maz) or (self.bounded_eval is False):
+                for bounding in maz_set_local['features']:
+                    bounding_shape = shape(bounding['geometry'])
+                    if temp_point.within(bounding_shape):
+                        insert_tuple = tuple([feature['geometry']['coordinates'][0],
+                                            feature['geometry']['coordinates'][1],
+                                            feature['properties']['APN'],
+                                            bounding['properties']['MAZ_ID_10']])
+                        if write_to_database is True:
+                            exec_str = ("INSERT INTO {} values {};").format(self.table_name, insert_tuple)
+                            self.cur.execute(exec_str)
+                        if bounding['properties']['MAZ_ID_10'] in self.apn_maz:
+                            self.apn_maz[bounding['properties']['MAZ_ID_10']].append(bounding)
+                        else:
+                            self.apn_maz[bounding['properties']['MAZ_ID_10']] = [list(insert_tuple)]
 
         if write_to_database is True:
-            print("Writing to database")
-            print(len(self.db_insert))
-            self.cur.executemany(f"INSERT INTO {self.db_name}.{self.table_name} values (%s,%s,%s,%s)", self.db_insert)
             self.conn.commit()
             self.conn.close()
-        print("MAZ\'s assigned")
+
 
 if __name__ == "__main__":
-    files = {'parcel': 'Parcels_All/all_parcel.geojson', 'maz':'MAZ/maz.geojson'}
+    files = {'parcel': '../Shapefiles/Cleaned/test_dirty_point.geojson', 'maz':'MAZ/maz.geojson'}
     pw = getpass.getpass()
     db_param = {'user':'root', 'db':'LinkingApnToMaz', 'host':'localhost', 'password': pw}
 
@@ -151,12 +143,11 @@ if __name__ == "__main__":
     example.set_crs_from_parcel()
     example.connect_database(db_param, table_name="Example", drop=True)
     # 258710.1067, 122857.2981, 1157943.9948, 2186600.2033
-    # full_ariz = [
-    #     (291681.866638, 2147002.203025),
-    #     (1114836.32474, 2099088.372318),
-    #     (1092055.717785, 913579.224235),
-    #     (341912.702254, 946252.321431)]
-    # bounding_coords = {'poly_coords': full_ariz, 'poly_crs': 'epsg:2223'}
-    example.set_bounding('maricopa_poly.wkt.txt')
+    full_ariz = [
+        (291681.866638, 2147002.203025),
+        (1114836.32474, 2099088.372318),
+        (1092055.717785, 913579.224235),
+        (341912.702254, 946252.321431)]
+    example.set_bounding(full_ariz)
     example.find_maz_in_bounds()
-    example.assign_maz_per_apn(write_to_database=True)
+    example.assign_maz_per_apn(True)
