@@ -122,8 +122,8 @@ class LinkingApnToMaz:
             if temp_point.within(self.bounding_for_maz) or (self.bounded_eval is False):
                 for bounding_shape in bounding_set_local:
                     if temp_point.within(bounding_shape[0]):
-                        insert_tuple = tuple([feature['geometry']['coordinates'][0],
-                                            feature['geometry']['coordinates'][1],
+                        insert_tuple = tuple([temp_point.coords[0],
+                                            temp_point.coords[1],
                                             feature['properties']['APN'],
                                             bounding_shape[1]])
                         insert_list.append(insert_tuple)
