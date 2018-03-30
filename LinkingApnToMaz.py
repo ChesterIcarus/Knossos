@@ -90,12 +90,10 @@ class LinkingApnToMaz:
     def find_maz_in_bounds(self):
         print("Finding MAZ in bounds")
         self.bounded_maz_set = {'features': list()}
+        print(f"There are {len(self.maz_set['features'])} MAZ\'s before boundry operations")
         for maz in self.maz_set['features']:
             temp_shape = shape(maz['geometry'])
-            try:
-                temp_point = temp_shape.representative_point()
-            except ValueError:
-                temp_point = temp_shape
+            temp_point = temp_shape.representative_point()
             if temp_point.within(self.bounding_for_maz):
                 self.bounded_maz_set['features'].append(maz)
         print("Found MAZ\'s in bounds")
