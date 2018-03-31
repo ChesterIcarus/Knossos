@@ -133,6 +133,8 @@ class LinkingApnToMaz:
                         #     self.apn_maz[bounding_shape[1]] = [list(insert_tuple)]
 
         if write_to_database is True:
+            db_param = {'user':'root', 'db':'LinkingApnToMaz', 'host':'localhost', 'password': 'austin'}
+            self.connect_database(db_param, 'Example', False)
             self.cur.executemany(f"INSERT INTO {self.table_name} values (%s,%s,%s,%s)", tuple(insert_list))
             self.conn.commit()
             self.conn.close()
