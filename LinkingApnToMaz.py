@@ -65,7 +65,7 @@ class LinkingApnToMaz:
         self.cur = self.conn.cursor()
         if drop is True:
             self.cur.execute(("DROP TABLE if exists {}").format(table_name))
-            exec_str = ("CREATE table {0} (coordX FLOAT, coordY FLOAT, APN CHAR(12), maz INT UNSIGNED NOT NULL)").format(table_name)
+            exec_str = ("CREATE table {0} (coordX FLOAT(20, 10), coordY FLOAT(20, 10), APN CHAR(12), maz INT UNSIGNED NOT NULL)").format(table_name)
             self.cur.execute(exec_str)
 
     def set_bounding(self, apn_bounding=None):

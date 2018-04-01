@@ -1,0 +1,52 @@
+Plan DB schema for file actor_plan.db, on table "trips"
+                0: unique_id (varchar(25)) (PRIMARYKEY)
+                1: pid (varchar(20)) (KEY)
+                2: orig_maz (int)
+                3: dest_maz (int)
+                4: orig_purp (char(2))
+                5: dest_purp (char(2))
+                6: mode (unsigned smallint)
+                7: depart_min (float)
+                8: trip_dist (float)
+                9: arrival_min (float)
+                10: time_at_dest (float)
+                
+ Coordinates to APN and MAZ DB schema for MySQL: 
+	LinkingAPNtoMAZ, on table "Example"
+                0: coordX (float)
+                1: coordY (float)
+                2: APN (char(12))
+                3: MAZ (int(10))
+ while (orig_apn == dest_apn) and (count < 10):
+                if ((row[2] in self.valid_maz_list) and (row[3] in self.valid_maz_list)) or (row[1] in self.actor_dict):
+                    if (row[1] in self.actor_dict) and (count == 0):
+                        orig_apn = self.actor_dict[row[1]][len(self.actor_dict[row[1]])-1]['destAPN']
+                        prior_maz = self.actor_dict[row[1]][len(self.actor_dict[row[1]])-1]['origMaz']
+
+                    else:
+                        exec_str = f"SELECT * FROM {apn_table_name} WHERE {apn_selector} = {row[2]}"
+                        orig_apn = self.apn_cur.execute(exec_str).fetchall()
+                        if len(orig_apn) <= 0:
+                            orig_apn = None;
+                            break
+                        orig_apn = orig_apn[numpy.random.randint(-1, len(orig_apn)-1)][0]
+
+                    if row[3] not in self.valid_maz_list:
+                        exec_str = f"SELECT * FROM {apn_table_name} WHERE {apn_selector} = {prior_maz}"
+                        dest_apn = self.apn_cur.execute(exec_str).fetchall()
+                        if len(dest_apn) <= 0:
+                            dest_apn = None
+                            break
+                        dest_apn = dest_apn[numpy.random.randint(-1, len(dest_apn)-1)][0]
+
+                    else:
+                        exec_str = f"SELECT * FROM {apn_table_name} WHERE {apn_selector} = {row[3]}"
+                        dest_apn = self.apn_cur.execute(exec_str).fetchall()
+                        if len(dest_apn) <= 0:
+                            dest_apn = None
+                            break
+                        dest_apn = dest_apn[numpy.random.randint(-1, len(dest_apn)-1)][0]
+
+                else:
+                    break
+                count += 
