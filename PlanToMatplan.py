@@ -164,7 +164,7 @@ class PlanToMatplan(object):
         # exec_str = (f"SELECT DISTINCT maz from {pid_maz_table_name}")
 
     def maz_to_plan_coords(self, apn_table_name, apn_selector):
-        '''
+        ''' 
             Plan DB schema for file actor_plan.db, on table "trips"
                 0: unique_id (varchar(25)) (PRIMARYKEY)
                 1: pid (varchar(20)) (KEY)
@@ -189,75 +189,41 @@ class PlanToMatplan(object):
         dest_x = None
         dest_y = None
         count = 0
-
-        prev_act = dict()
         for row in self.plan_rows:
             # Testing if maz is in valid defined subset
             add_to_dict = False
             actor_id = row[1]
             orig_maz = int(row[2])
             dest_maz = int(row[3])
+            prev_act = dict()
 
             while not add_to_dict and (count < 10):
-                if ((orig_maz in self.valid_maz_list) and (dest_maz in self.valid_maz_list)) or (actor_id in self.actor_dict):
-                    if (actor_id in self.actor_dict) and (count == 0):
-                        # print(prev_act)
-                        orig_apn = prev_act['destAPN']
-                        prior_maz = prev_act['origMaz']
-                        orig_x = prev_act['destCoord_x']
-                        orig_y = prev_act['destCoord_y']
-                        prior_x = prev_act['destCoord_x']
-                        prior_y = prev_act['destCoord_y']
-
+                if (((row[2] in self.valid_maz_list) and (row[3] in self.valid_maz_list)) or (row[1] in self.actor_dict)):
+                    if (row[1] in self.actor_dict) and (count == 0):
+                        orig_apn = self.actor_dict[row[1]][len(self.actor_dict[row[1]])-1]['destAPN']
+                        prior_maz = self.actor_dict[row[1]][len(self.actor_dict[row[1]])-1]['origMaz']
                     else:
-                        exec_str = f"SELECT * FROM {apn_table_name} WHERE {apn_selector} = {orig_maz}"
-                        self.apn_cur.execute(exec_str)
-                        orig_apn_rows = self.apn_cur.fetchall()
-                        if len(orig_apn_rows) <= 0:
-                            orig_apn = None;
-                            break
-                        else:
-                            rand_row = np.random.randint(-1, len(orig_apn_rows)-1)
-                            orig_apn = orig_apn_rows[rand_row][2]
-                            orig_x = orig_apn_rows[rand_row][0]
-                            orig_y = orig_apn_rows[rand_row][1]
-
-                    if dest_maz not in self.valid_maz_list:
-                        exec_str = f"SELECT * FROM {apn_table_name} WHERE {apn_selector} = {prior_maz}"
-                        self.apn_cur.execute(exec_str)
-                        dest_apn_rows = self.apn_cur.fetchall()
-                        if len(dest_apn_rows) <= 0:
-                            dest_apn = None
-                            break
-                        else:
-                            rand_row = np.random.randint(-1, len(dest_apn_rows)-1)
-                            dest_apn = dest_apn_rows[rand_row][2]
-                            dest_x = dest_apn_rows[rand_row][0]
-                            dest_y = dest_apn_rows[rand_row][1]
-
+                        exec_str = ("SELECT * FROM {0} WHERE {1} = {2}").format(apn_table_name, apn_selector, row[2])
+                        orig_apn = self.apn_cur.execute(exec_str).fetchall()
+                        if len(orig_apn) <= 0: orig_apn = None; break
+                        orig_apn = orig_apn[numpy.random.randint(-1, len(orig_apn)-1)][0]
+                    if (row[3] not in self.valid_maz_list):
+                        exec_str = ("SELECT * FROM {0} WHERE {1} = {2}"\
+                            ).format(apn_table_name, apn_selector, prior_maz)
+                        dest_apn = self.apn_cur.execute(exec_str).fetchall()
+                        if len(dest_apn) <= 0: dest_apn = None; break
+                        dest_apn = dest_apn[numpy.random.randint(-1, len(dest_apn)-1)][0]
                     else:
-                        exec_str = f"SELECT * FROM {apn_table_name} WHERE {apn_selector} = {dest_maz}"
-                        self.apn_cur.execute(exec_str)
-                        dest_apn_rows = self.apn_cur.fetchall()
-                        if len(dest_apn_rows) <= 0:
-                            dest_apn = None
-                            break
-                        else:
-                            rand_row = np.random.randint(-1, len(dest_apn_rows)-1)
-                            dest_apn = dest_apn_rows[rand_row][2]
-                            dest_x = dest_apn_rows[rand_row][0]
-                            dest_y = dest_apn_rows[rand_row][1]
-
+                        exec_str = ("SELECT * FROM {0} WHERE {1} = {2}"\
+                            ).format(apn_table_name, apn_selector, row[3])
+                        dest_apn = self.apn_cur.execute(exec_str).fetchall()
+                        if len(dest_apn) <= 0: dest_apn = None; break
+                        dest_apn = dest_apn[numpy.random.randint(-1, len(dest_apn)-1)][0]
                 else:
-                    add_to_dict = False
-                    count = 10
                     break
-
                 count += 1
-                if (dest_apn != orig_apn) and (dest_x != orig_x) and (dest_y != orig_y):
-                    add_to_dict = True
 
-            if add_to_dict:
+            if (dest_apn != orig_apn) and (dest_apn != None) and (orig_apn != None):
                 earliest_MAG = float(4.5 * 60)
                 depart_time_in_secs = float(row[7]) * 60 + earliest_MAG
                 arrive_time_in_secs = float(row[9]) * 60 + earliest_MAG
@@ -268,17 +234,18 @@ class PlanToMatplan(object):
                                                 'origCoord_y': orig_y,
                                                 'destCoord_x': dest_x,
                                                 'destCoord_y': dest_y,
-                                                'mode': self.mode_dict[str(row[6])],
+                                                'mode':self.mode_dict[str(row[6])],
                                                 'origPurp': str(row[4]),
                                                 'destPurp': str(row[5]),
                                                 'arrivalTimeSec': arrive_time_in_secs,
                                                 'finalDepartTimeSec': depart_time_in_secs,
                                                 'timeAtDestSec': at_dest_time_in_secs}
-                prev_act = act_dict
-                prev_act['origMaz'] = row[2]
+                # prev_act = act_dict
+                # prev_act['origMaz'] = row[2]
                 self.actor_dict[row[1]].append(act_dict)
-
             count = 0
+            orig_apn = None
+            dest_apn = None
 
     def plan_to_sql(self):
         if self.plan_conn == None:
@@ -300,10 +267,10 @@ class PlanToMatplan(object):
                             'finalDepartTimeSec': y['finalDepartTimeSec'],
                             'arrivalTimeSec': y['arrivalTimeSec'],
                             'timeAtDestSec': y['timeAtDestSec']}
-                # exec_str = (f"INSERT INTO {self.plan_table_name} VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)")
                 insert_list.append(tuple(data_dict.values()))
+                # exec_str = (f"INSERT INTO {self.plan_table_name} VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)")
                 # self.plan_cur.execute(exec_str, tuple(data_dict.values()))
-        exec_str = = (f"INSERT INTO {self.plan_table_name} VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)")
+        exec_str = (f"INSERT INTO {self.plan_table_name} VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)")
         self.plan_cur.execute(exec_str, tuple(insert_list))
         self.plan_conn.commit()
         self.plan_conn.close()
