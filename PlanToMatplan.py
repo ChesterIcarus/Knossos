@@ -283,6 +283,7 @@ class PlanToMatplan(object):
     def plan_to_sql(self):
         if self.plan_conn == None:
             raise ConnectionError
+        insert_list = list()
         for itm in self.actor_dict:
             for index in range(0, len(self.actor_dict[itm])):
                 y = self.actor_dict[itm][index]
@@ -299,9 +300,12 @@ class PlanToMatplan(object):
                             'finalDepartTimeSec': y['finalDepartTimeSec'],
                             'arrivalTimeSec': y['arrivalTimeSec'],
                             'timeAtDestSec': y['timeAtDestSec']}
-                exec_str = (f"INSERT INTO {self.plan_table_name} VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)")
-                self.plan_cur.execute(exec_str, tuple(data_dict.values()))
-            self.plan_conn.commit()
+                # exec_str = (f"INSERT INTO {self.plan_table_name} VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)")
+                insert_list.append(tuple(data_dict.values()))
+                # self.plan_cur.execute(exec_str, tuple(data_dict.values()))
+        exec_str = = (f"INSERT INTO {self.plan_table_name} VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)")
+        self.plan_cur.execute(exec_str, tuple(insert_list))
+        self.plan_conn.commit()
         self.plan_conn.close()
 
     def plan_to_txt_file(self, output_file):
