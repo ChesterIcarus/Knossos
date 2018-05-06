@@ -4,7 +4,7 @@ import json
 import math
 import pickle
 import sqlite3 as sql
-import MySQLdb as mysql
+import pymysql as mysql
 import getpass
 import numpy as np
 # from __init__ import bounding_for_maz
@@ -47,13 +47,16 @@ class PlanToMatplan(object):
             self.plan_conn = sql.connect(_file)
             self.plan_cur = self.plan_conn.cursor()
         elif (database != None and _file == None):
-            self.plan_conn = mysql.connect(**database)
+            self.plan_conn = mysql.connect(user=database['user'],
+                        password=database['password'],
+                        db=database['db'],
+                        host=database['host'])
             self.plan_cur = self.plan_conn.cursor()
             self.plan_table_name = plan_table_name
             if drop:
                 exec_str = f"DROP TABLE IF EXISTS {self.plan_table_name}"
                 self.plan_cur.execute(exec_str)
-                exec_str = f"""CREATE TABLE {self.plan_table_name} 
+                exec_str = f"""CREATE TABLE {self.plan_table_name}
                 (pid VARCHAR(25),
                 origAPN CHAR(12),
                 destAPN CHAR(12),
@@ -75,7 +78,10 @@ class PlanToMatplan(object):
             self.apn_cur = self.apn_conn.cursor()
 
         elif (database != None and _file == None):
-            self.apn_conn = mysql.connect(**database)
+            self.apn_conn = mysql.connect(user=database['user'],
+                        password=database['password'],
+                        db=database['db'],
+                        host=database['host'])
             self.apn_cur = self.apn_conn.cursor()
             self.apn_table_name = apn_table_name
 
@@ -90,7 +96,7 @@ class PlanToMatplan(object):
                 maz_set = self.maz_set
             else:
                 raise ValueError(None)
-            
+
             all_in_bounding = True
             if bounding is None:
                 bounding_for_maz = polygon.LinearRing([
@@ -107,7 +113,7 @@ class PlanToMatplan(object):
                     if (all_in_bounding == False):
                         if not ((shape(maz['geometry'])).representative_point()).within(bounding_for_maz):
                             add_to_set = False
-                    if (add_to_set == True):
+                    if (add_to_set):
                         rep = (shape(maz['geometry'])).representative_point()
                         try:
                             maz_set['features'][index]['geometry']['coordinates'] = rep.coords[0]
@@ -155,9 +161,10 @@ class PlanToMatplan(object):
         rows_query = (f"SELECT * from {pid_maz_table_name}")
         cursor.execute(rows_query)
         self.plan_rows = cursor.fetchall()
+        # exec_str = (f"SELECT DISTINCT maz from {pid_maz_table_name}")
 
     def maz_to_plan_coords(self, apn_table_name, apn_selector):
-        ''' 
+        '''
             Plan DB schema for file actor_plan.db, on table "trips"
                 0: unique_id (varchar(25)) (PRIMARYKEY)
                 1: pid (varchar(20)) (KEY)
@@ -182,17 +189,19 @@ class PlanToMatplan(object):
         dest_x = None
         dest_y = None
         count = 0
+
+        prev_act = dict()
         for row in self.plan_rows:
             # Testing if maz is in valid defined subset
             add_to_dict = False
             actor_id = row[1]
             orig_maz = int(row[2])
             dest_maz = int(row[3])
-            prev_act = dict()
 
             while not add_to_dict and (count < 10):
                 if ((orig_maz in self.valid_maz_list) and (dest_maz in self.valid_maz_list)) or (actor_id in self.actor_dict):
                     if (actor_id in self.actor_dict) and (count == 0):
+                        # print(prev_act)
                         orig_apn = prev_act['destAPN']
                         prior_maz = prev_act['origMaz']
                         orig_x = prev_act['destCoord_x']
@@ -242,6 +251,7 @@ class PlanToMatplan(object):
                 else:
                     add_to_dict = False
                     count = 10
+                    break
 
                 count += 1
                 if (dest_apn != orig_apn) and (dest_x != orig_x) and (dest_y != orig_y):
@@ -258,7 +268,7 @@ class PlanToMatplan(object):
                                                 'origCoord_y': orig_y,
                                                 'destCoord_x': dest_x,
                                                 'destCoord_y': dest_y,
-                                                'mode':self.mode_dict[str(row[6])],
+                                                'mode': self.mode_dict[str(row[6])],
                                                 'origPurp': str(row[4]),
                                                 'destPurp': str(row[5]),
                                                 'arrivalTimeSec': arrive_time_in_secs,
@@ -267,7 +277,7 @@ class PlanToMatplan(object):
                 prev_act = act_dict
                 prev_act['origMaz'] = row[2]
                 self.actor_dict[row[1]].append(act_dict)
-                
+
             count = 0
 
     def plan_to_sql(self):
@@ -318,14 +328,17 @@ class PlanToMatplan(object):
 if __name__ == "__main__":
     example = PlanToMatplan()
     pw = getpass.getpass()
-    apn_db_param = {'user':'root', 'db':'LinkingApnToMaz', 'host':'localhost', 'password': pw}
-    plan_db_param = {'user':'root', 'db':'PlansByAPN', 'host':'localhost', 'password': pw}
-    pid_maz_db_param = {'user':'root', 'db':'MagDataToPlansByPidAndMaz', 'host':'localhost', 'password': pw}
+    apn_db_param = {'user':'root', 'db':'linkingApnToMaz', 'host':'localhost', 'password': pw}
+    plan_db_param = {'user':'root', 'db':'plansByAPN', 'host':'localhost', 'password': pw}
+    pid_maz_db_param = {'user':'root', 'db':'magDataToPlansByPidAndMaz', 'host':'localhost', 'password': pw}
 
     example.connect_apn_db(database=apn_db_param, apn_table_name='Example')
     example.connect_plan_db(database=plan_db_param, plan_table_name='Example', drop=True)
 
-    con = mysql.connect(**pid_maz_db_param)
+    con = mysql.connect(user=pid_maz_db_param['user'],
+                        password=pid_maz_db_param['password'],
+                        db=pid_maz_db_param['db'],
+                        host=pid_maz_db_param['host'])
     cur = con.cursor()
 
     example.load_plans_from_db(cursor=cur, pid_maz_table_name="Example")
@@ -335,7 +348,7 @@ if __name__ == "__main__":
         (1114836.32474, 2099088.372318),
         (1092055.717785, 913579.224235),
         (341912.702254, 946252.321431)]
-    example.bounded_maz_creation(preprocessed_files=None, maz_file="./maz_dict.geojson", output_file="PlanToMatplan.txt", overwrite=True, bounding=full_ariz)
+    example.bounded_maz_creation(preprocessed_files=None, maz_file='../Data/maz.geojson', output_file="PlanToMatplan.txt", overwrite=True, bounding=None)
     # example.load_plans_from_json( JSON FILE HERE)
     # example.load_plans_from_sqlite("actor_plan.db", "trips")
     example.maz_to_plan_coords(example.apn_table_name, "maz")
