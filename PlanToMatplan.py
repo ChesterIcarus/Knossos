@@ -34,6 +34,7 @@ class PlanToMatplan(object):
         print("Into agents plans with defined coordinates/APN's")
         self.maz_set = None
         self.actor_dict = defaultdict(list)
+        self.apn_dict = defaultdict(list)
         self.plan_rows = dict()
         self.plan_conn = None
         self.plan_cur = None
@@ -162,8 +163,15 @@ class PlanToMatplan(object):
         cursor.execute(rows_query)
         self.plan_rows = cursor.fetchall()
         # exec_str = (f"SELECT DISTINCT maz from {pid_maz_table_name}")
+    
+    def form_apn_dict(self, apn_table_name):
+        exec_str = f"SELECT * from {apn_table_name}"
+        self.apn_cur.execute(exec_str)
+        rows = self.apn_cur.fetchall()
+        for row in rows:
+            self.apn_dict[row[3]].append(tuple(row[0:3]))
 
-    def maz_to_plan_coords(self, apn_table_name, apn_selector):
+    def maz_to_plan_coords(self, apn_table_name):
         '''
             Plan DB schema for file actor_plan.db, on table "trips"
                 0: unique_id (varchar(25)) (PRIMARYKEY)
@@ -182,6 +190,7 @@ class PlanToMatplan(object):
                 2: coordY (float)
                 3: APN (char(12))
                 4: MAZ (int(10)) '''
+        self.form_apn_dict(apn_table_name)
         orig_apn = None
         dest_apn = None
         orig_x = None
@@ -197,38 +206,41 @@ class PlanToMatplan(object):
             dest_maz = int(row[3])
             prev_act = dict()
 
-            while not add_to_dict and (count < 10):
+            while not add_to_dict and (count < 2):
                 if (((row[2] in self.valid_maz_list) and (row[3] in self.valid_maz_list)) or (row[1] in self.actor_dict)):
                     if (row[1] in self.actor_dict) and (count == 0):
                         orig_apn = self.actor_dict[row[1]][len(self.actor_dict[row[1]])-1]['destAPN']
                         prior_maz = self.actor_dict[row[1]][len(self.actor_dict[row[1]])-1]['origAPN']
                     else:
-                        exec_str = ("SELECT * FROM {0} WHERE {1} = {2}").format(apn_table_name, apn_selector, row[2])
-                        self.apn_cur.execute(exec_str)
-                        orig_apn = self.apn_cur.fetchall()
+                        # exec_str = ("SELECT * FROM {0} WHERE {1} = {2}").format(apn_table_name, apn_selector, row[2])
+                        # self.apn_cur.execute(exec_str)
+                        # orig_apn = self.apn_cur.fetchall()
+                        orig_apn = self.apn_dict[row[2]]
                         if len(orig_apn) <= 0: orig_apn = None; break
-                        rand_val = np.random.randint(-1, len(orig_apn)-1)
+                        rand_val = np.random.randint(len(orig_apn))
                         orig_x = orig_apn[rand_val][0]
                         orig_y = orig_apn[rand_val][1]
                         orig_apn = orig_apn[rand_val][2]
 
                     if (row[3] not in self.valid_maz_list):
-                        exec_str = ("SELECT * FROM {0} WHERE {1} = {2}"\
-                            ).format(apn_table_name, apn_selector, prior_maz)
-                        self.apn_cur.execute(exec_str)
-                        dest_apn = self.apn_cur.fetchall()
+                        # exec_str = ("SELECT * FROM {0} WHERE {1} = {2}"\
+                        #     ).format(apn_table_name, apn_selector, prior_maz)
+                        # self.apn_cur.execute(exec_str)
+                        # dest_apn = self.apn_cur.fetchall()
+                        dest_apn = self.apn_dict[prior_maz]
                         if len(dest_apn) <= 0: dest_apn = None; break
-                        rand_val = np.random.randint(-1, len(dest_apn)-1)
+                        rand_val = np.random.randint(len(dest_apn))
                         dest_x = dest_apn[rand_val][0]
                         dest_y = dest_apn[rand_val][1]
                         dest_apn = dest_apn[rand_val][2]
                     else:
-                        exec_str = ("SELECT * FROM {0} WHERE {1} = {2}"\
-                            ).format(apn_table_name, apn_selector, row[3])
-                        self.apn_cur.execute(exec_str)
-                        dest_apn = self.apn_cur.fetchall()
+                        # exec_str = ("SELECT * FROM {0} WHERE {1} = {2}"\
+                        #     ).format(apn_table_name, apn_selector, row[3])
+                        # self.apn_cur.execute(exec_str)
+                        # dest_apn = self.apn_cur.fetchall()
+                        dest_apn = self.apn_dict[row[3]]
                         if len(dest_apn) <= 0: dest_apn = None; break
-                        rand_val = np.random.randint(-1, len(dest_apn)-1)
+                        rand_val = np.random.randint(len(dest_apn))
                         dest_x = dest_apn[rand_val][0]
                         dest_y = dest_apn[rand_val][1]
                         dest_apn = dest_apn[rand_val][2]
