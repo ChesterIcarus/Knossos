@@ -164,7 +164,7 @@ class PlanToMatplan(object):
         # exec_str = (f"SELECT DISTINCT maz from {pid_maz_table_name}")
 
     def maz_to_plan_coords(self, apn_table_name, apn_selector):
-        ''' 
+        '''
             Plan DB schema for file actor_plan.db, on table "trips"
                 0: unique_id (varchar(25)) (PRIMARYKEY)
                 1: pid (varchar(20)) (KEY)
@@ -201,12 +201,13 @@ class PlanToMatplan(object):
                 if (((row[2] in self.valid_maz_list) and (row[3] in self.valid_maz_list)) or (row[1] in self.actor_dict)):
                     if (row[1] in self.actor_dict) and (count == 0):
                         orig_apn = self.actor_dict[row[1]][len(self.actor_dict[row[1]])-1]['destAPN']
-                        prior_maz = self.actor_dict[row[1]][len(self.actor_dict[row[1]])-1]['origMaz']
+                        prior_maz = self.actor_dict[row[1]][len(self.actor_dict[row[1]])-1]['origAPN']
                     else:
                         exec_str = ("SELECT * FROM {0} WHERE {1} = {2}").format(apn_table_name, apn_selector, row[2])
-                        orig_apn = self.apn_cur.execute(exec_str).fetchall()
+                        self.apn_cur.execute(exec_str)
+                        orig_apn = self.apn_cur.fetchall()
                         if len(orig_apn) <= 0: orig_apn = None; break
-                        rand_val = numpy.random.randint(-1, len(orig_apn)-1)
+                        rand_val = np.random.randint(-1, len(orig_apn)-1)
                         orig_x = orig_apn[rand_val][0]
                         orig_y = orig_apn[rand_val][1]
                         orig_apn = orig_apn[rand_val][2]
@@ -214,18 +215,20 @@ class PlanToMatplan(object):
                     if (row[3] not in self.valid_maz_list):
                         exec_str = ("SELECT * FROM {0} WHERE {1} = {2}"\
                             ).format(apn_table_name, apn_selector, prior_maz)
-                        dest_apn = self.apn_cur.execute(exec_str).fetchall()
+                        self.apn_cur.execute(exec_str)
+                        dest_apn = self.apn_cur.fetchall()
                         if len(dest_apn) <= 0: dest_apn = None; break
-                        rand_val = numpy.random.randint(-1, len(dest_apn)-1)
+                        rand_val = np.random.randint(-1, len(dest_apn)-1)
                         dest_x = dest_apn[rand_val][0]
                         dest_y = dest_apn[rand_val][1]
                         dest_apn = dest_apn[rand_val][2]
                     else:
                         exec_str = ("SELECT * FROM {0} WHERE {1} = {2}"\
                             ).format(apn_table_name, apn_selector, row[3])
-                        dest_apn = self.apn_cur.execute(exec_str).fetchall()
+                        self.apn_cur.execute(exec_str)
+                        dest_apn = self.apn_cur.fetchall()
                         if len(dest_apn) <= 0: dest_apn = None; break
-                        rand_val = numpy.random.randint(-1, len(dest_apn)-1)
+                        rand_val = np.random.randint(-1, len(dest_apn)-1)
                         dest_x = dest_apn[rand_val][0]
                         dest_y = dest_apn[rand_val][1]
                         dest_apn = dest_apn[rand_val][2]
