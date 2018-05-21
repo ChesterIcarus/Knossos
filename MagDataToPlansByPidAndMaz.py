@@ -1,4 +1,3 @@
-import os
 import csv
 import json
 import getpass
@@ -53,17 +52,17 @@ class MagDataToPlansByPidAndMaz:
         if drop == True:
             self.cur.execute(("DROP TABLE if exists {}").format(table_name))
             self.cur.execute(('CREATE TABLE {0} \n'
-                    '            (unique_id VARCHAR(25),\n'
-                    '            pid VARCHAR(20),\n'
-                    '            orig_maz MEDIUMINT,\n'
-                    '            dest_maz MEDIUMINT,\n'
-                    '            orig_purp CHAR(2),\n'
-                    '            dest_purp CHAR(2),\n'
-                    '            mode SMALLINT UNSIGNED,\n'
-                    '            depart_min FLOAT,\n'
-                    '            trip_dist FLOAT,\n'
-                    '            arrival_min FLOAT,\n'
-                    '            time_at_dest FLOAT)').format(table_name))
+                              '            (unique_id VARCHAR(25),\n'
+                              '            pid VARCHAR(20),\n'
+                              '            orig_maz MEDIUMINT,\n'
+                              '            dest_maz MEDIUMINT,\n'
+                              '            orig_purp CHAR(2),\n'
+                              '            dest_purp CHAR(2),\n'
+                              '            mode SMALLINT UNSIGNED,\n'
+                              '            depart_min FLOAT,\n'
+                              '            trip_dist FLOAT,\n'
+                              '            arrival_min FLOAT,\n'
+                              '            time_at_dest FLOAT)').format(table_name))
 
     def read_mag_csv(self, filepath):
         '''Takes MAG data as a CSV, and parses the file to a dictionary.
@@ -82,7 +81,8 @@ class MagDataToPlansByPidAndMaz:
             if float(actor[32]) < 0:
                 actor[32] = 0
 
-            uuid = ('{}_{}_{}').format(str(actor[0]), str(actor[2]), str(actor[3]))
+            uuid = ('{}_{}_{}').format(
+                str(actor[0]), str(actor[2]), str(actor[3]))
             pid = f'{actor[2]}_{actor[3]}'
 
             orig_purp = self.purpose_dict[str(actor[22])]
@@ -111,11 +111,10 @@ class MagDataToPlansByPidAndMaz:
 if (__name__ == "__main__"):
     database = {}
     pw = getpass.getpass()
-    db_param = {'user':'root', 'db':'MagDataToPlansByPidAndMaz', 'host':'localhost', 'password': pw}
+    db_param = {'user': 'root', 'db': 'MagDataToPlansByPidAndMaz',
+                'host': 'localhost', 'password': pw}
     example = MagDataToPlansByPidAndMaz()
     example.connect_database(db_param, table_name='Example', drop=True)
     example.read_mag_csv("../Data/output_disaggTripList.csv")
     example.write_mag_to_sql()
     # example.write_mag_to_file("MagDataToPlan_output_Example.txt")
-
-

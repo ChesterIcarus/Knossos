@@ -206,19 +206,29 @@ class PlanToMatplan(object):
                         exec_str = ("SELECT * FROM {0} WHERE {1} = {2}").format(apn_table_name, apn_selector, row[2])
                         orig_apn = self.apn_cur.execute(exec_str).fetchall()
                         if len(orig_apn) <= 0: orig_apn = None; break
-                        orig_apn = orig_apn[numpy.random.randint(-1, len(orig_apn)-1)][0]
+                        rand_val = numpy.random.randint(-1, len(orig_apn)-1)
+                        orig_x = orig_apn[rand_val][0]
+                        orig_y = orig_apn[rand_val][1]
+                        orig_apn = orig_apn[rand_val][2]
+
                     if (row[3] not in self.valid_maz_list):
                         exec_str = ("SELECT * FROM {0} WHERE {1} = {2}"\
                             ).format(apn_table_name, apn_selector, prior_maz)
                         dest_apn = self.apn_cur.execute(exec_str).fetchall()
                         if len(dest_apn) <= 0: dest_apn = None; break
-                        dest_apn = dest_apn[numpy.random.randint(-1, len(dest_apn)-1)][0]
+                        rand_val = numpy.random.randint(-1, len(dest_apn)-1)
+                        dest_x = dest_apn[rand_val][0]
+                        dest_y = dest_apn[rand_val][1]
+                        dest_apn = dest_apn[rand_val][2]
                     else:
                         exec_str = ("SELECT * FROM {0} WHERE {1} = {2}"\
                             ).format(apn_table_name, apn_selector, row[3])
                         dest_apn = self.apn_cur.execute(exec_str).fetchall()
                         if len(dest_apn) <= 0: dest_apn = None; break
-                        dest_apn = dest_apn[numpy.random.randint(-1, len(dest_apn)-1)][0]
+                        rand_val = numpy.random.randint(-1, len(dest_apn)-1)
+                        dest_x = dest_apn[rand_val][0]
+                        dest_y = dest_apn[rand_val][1]
+                        dest_apn = dest_apn[rand_val][2]
                 else:
                     break
                 count += 1
