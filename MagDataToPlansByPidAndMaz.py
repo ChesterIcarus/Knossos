@@ -39,7 +39,7 @@ class MagDataToPlansByPidAndMaz:
 
     def connect_database(self, database, table_name, drop):
         '''Connecting to Database used to store the output, if the output is to be written to a database.
-        Input is of the form: database = 
+        Input is of the form: database =
             {'host': port, 'user': Valid Database User,
             'password': Password for the specified user, 'db': Database to use},
             table_name =  Name of the table to use (Must exist if drop is False),
@@ -107,8 +107,6 @@ class MagDataToPlansByPidAndMaz:
         with open(filepath, 'w+') as handle:
             json.dump(self.actor_dict, handle)
 
-    # def __del__(self):
-    #     self.conn.close()
 
 if (__name__ == "__main__"):
     database = {}
@@ -116,7 +114,7 @@ if (__name__ == "__main__"):
     db_param = {'user':'root', 'db':'MagDataToPlansByPidAndMaz', 'host':'localhost', 'password': pw}
     example = MagDataToPlansByPidAndMaz()
     example.connect_database(db_param, table_name='Example', drop=True)
-    example.read_mag_csv("output_disaggTripList.csv")
+    example.read_mag_csv("../Data/output_disaggTripList.csv")
     example.write_mag_to_sql()
     # example.write_mag_to_file("MagDataToPlan_output_Example.txt")
 
