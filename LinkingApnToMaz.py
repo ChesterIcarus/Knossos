@@ -78,10 +78,10 @@ class LinkingApnToMaz:
         '''Allows the user to specify a subsection of the entered area to evaluate'''
         # Setting bounding on the map for reduced APN eval. based on MAZ
         if (apn_bounding is not None):
-            bounding_from_inp = polygon.Polygon(apn_bounding['poly_coords'], apn_bounding['poly_holes'] if (
+            bounding_from_inp = polygon.Polygon(apn_bounding['coordinates'], apn_bounding['poly_holes'] if (
                 'poly_holes' in apn_bounding.keys()) else None)
             proj_to_map = partial(pyproj.transform, pyproj.Proj(
-                init=apn_bounding['poly_crs']), pyproj.Proj(init=('epsg:{}').format(self.crs)))
+                init=apn_bounding['crs']), pyproj.Proj(init=('epsg:{}').format(self.crs)))
             bounding_for_maz = transform(proj_to_map, bounding_from_inp)
 
         else:
@@ -162,19 +162,13 @@ if __name__ == "__main__":
     example.load_parcel(files['parcel'])
     example.set_crs_from_parcel()
     example.connect_database(db_param, table_name="FullArizona", drop=True)
-    # 258710.1067, 122857.2981, 1157943.9948, 2186600.2033
-    # full_ariz = [
-    #     (291681.866638, 2147002.203025),
-    #     (1114836.32474, 2099088.372318),
-    #     (1092055.717785, 913579.224235),
-    #     (341912.702254, 946252.321431)]
-    # bounding_coords = {'coordinates': full_ariz, 'crs': 'epsg:2223'}
+
     maricopa = {'coordinates': list(), 'crs': 'epsg:4327'}
     with open('maricopa_poly.geojson', 'r') as handle:
         tmp = json.load(handle)
-        maricopa['coordinates'] = tmp['geometry']['coordinates']
+        maricopa['coordinates'] = tmp['geometry'][0]['coordinates']
+    example.set_bounding(apn_bounding=maricopa)
 
     # example.set_bounding()
-    example.set_bounding(apn_bounding=maricopa)
     example.find_maz_in_bounds()
     example.assign_maz_per_apn(write_to_database=True)
