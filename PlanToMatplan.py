@@ -295,7 +295,7 @@ class PlanToMatplan(object):
                 insert_list.append(tuple(data_dict.values()))
                 # exec_str = (f"INSERT INTO {self.plan_table_name} VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)")
                 # self.plan_cur.execute(exec_str, tuple(data_dict.values()))
-        exec_str = (f"INSERT INTO {self.plan_table_name} VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)")
+        exec_str = (f"INSERT INTO {self.plan_table_name} VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)")
         self.plan_cur.execute(exec_str, tuple(insert_list))
         self.plan_conn.commit()
         self.plan_conn.close()
