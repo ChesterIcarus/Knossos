@@ -280,18 +280,18 @@ class PlanToMatplan(object):
             for index in range(0, len(self.actor_dict[itm])):
                 y = self.actor_dict[itm][index]
                 data_dict = {'pid': itm,
-                            'origAPN': str(y['origAPN']),
-                            'destAPN': str(y['destAPN']),
-                            'origCoord_x': float(y['origCoord_x']),
-                            'origCoord_y': float(y['origCoord_y']),
-                            'destCoord_x': float(y['destCoord_x']),
-                            'destCoord_y': float(y['destCoord_y']),
-                            'mode': str(y['mode']),
-                            'origPurp': str(y['origPurp']),
-                            'destPurp': str(y['destPurp']),
-                            'finalDepartTimeSec': y['finalDepartTimeSec'],
-                            'arrivalTimeSec': y['arrivalTimeSec'],
-                            'timeAtDestSec': y['timeAtDestSec']}
+                            'origAPN': str(y['origAPN']), # 1
+                            'destAPN': str(y['destAPN']), # 2
+                            'origCoord_x': float(y['origCoord_x']), # 3
+                            'origCoord_y': float(y['origCoord_y']), # 4
+                            'destCoord_x': float(y['destCoord_x']), # 5
+                            'destCoord_y': float(y['destCoord_y']), # 6
+                            'mode': str(y['mode']), # 7
+                            'origPurp': str(y['origPurp']), # 8
+                            'destPurp': str(y['destPurp']), # 9
+                            'finalDepartTimeSec': y['finalDepartTimeSec'], # 10
+                            'arrivalTimeSec': y['arrivalTimeSec'], # 11
+                            'timeAtDestSec': y['timeAtDestSec']} # 12
                 insert_list.append(tuple(data_dict.values()))
                 # exec_str = (f"INSERT INTO {self.plan_table_name} VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)")
                 # self.plan_cur.execute(exec_str, tuple(data_dict.values()))
