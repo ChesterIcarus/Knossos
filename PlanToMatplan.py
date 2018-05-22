@@ -163,7 +163,7 @@ class PlanToMatplan(object):
         cursor.execute(rows_query)
         self.plan_rows = cursor.fetchall()
         # exec_str = (f"SELECT DISTINCT maz from {pid_maz_table_name}")
-    
+
     def form_apn_dict(self, apn_table_name):
         exec_str = f"SELECT * from {apn_table_name}"
         self.apn_cur.execute(exec_str)
@@ -347,6 +347,6 @@ if __name__ == "__main__":
     example.bounded_maz_creation(preprocessed_files=None, maz_file='../Data/maz.geojson', output_file="PlanToMatplan.txt", overwrite=True, bounding=None)
     # example.load_plans_from_json( JSON FILE HERE)
     # example.load_plans_from_sqlite("actor_plan.db", "trips")
-    example.maz_to_plan_coords(example.apn_table_name, "maz")
+    example.maz_to_plan_coords(example.apn_table_name)
     example.plan_to_txt_file("Plans_from_PlanToMatplan.txt")
     example.plan_to_sql()
