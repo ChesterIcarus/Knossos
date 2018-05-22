@@ -163,7 +163,7 @@ if __name__ == "__main__":
     example.set_crs_from_parcel()
     example.connect_database(db_param, table_name="FullArizona", drop=True)
 
-    maricopa = {'coordinates': list(), 'crs': 'epsg:4327'}
+    maricopa = {'coordinates': list(), 'crs': 'epsg:4326'}
     with open('maricopa_poly.geojson', 'r') as handle:
         tmp = json.load(handle)
         maricopa['coordinates'] = tmp['geometry'][0]['coordinates']
