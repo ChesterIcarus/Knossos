@@ -3,7 +3,8 @@ import pyproj
 import getpass
 import pymysql as sql
 from functools import partial
-from shapely.wkt import load
+# from shapely.wkt import load
+import shapely.wkt as wkt
 from shapely.ops import transform
 from shapely.geometry import shape, polygon, LineString
 
@@ -74,14 +75,16 @@ class LinkingApnToMaz:
             self.cur.execute(exec_str)
             self.conn.commit()
 
-    def set_bounding(self, apn_bounding=None):
+    def set_bounding(self, wkt_filepath=None, wkt_crs=None):
         '''Allows the user to specify a subsection of the entered area to evaluate'''
         # Setting bounding on the map for reduced APN eval. based on MAZ
-        if (apn_bounding is not None):
-            bounding_from_inp = polygon.Polygon(apn_bounding['coordinates'], apn_bounding['poly_holes'] if (
-                'poly_holes' in apn_bounding.keys()) else None)
+        if (wkt_filepath is not None) and (wkt_crs is not None):
+            wkt_text = str
+            with open(wkt_filepath, 'r') as handle:
+                wkt_text = handle.read()
+            bounding_from_inp = wkt.loads(wkt_text)
             proj_to_map = partial(pyproj.transform, pyproj.Proj(
-                init=apn_bounding['crs']), pyproj.Proj(init=('epsg:{}').format(self.crs)))
+                init=wkt_crs), pyproj.Proj(init=('epsg:{}').format(self.crs)))
             bounding_for_maz = transform(proj_to_map, bounding_from_inp)
 
         else:
@@ -158,17 +161,11 @@ if __name__ == "__main__":
                 'host': 'localhost', 'password': pw}
 
     example = LinkingApnToMaz()
+    example.connect_database(db_param, table_name="FullArizona", drop=True)
     example.load_maz(files['maz'])
     example.load_parcel(files['parcel'])
     example.set_crs_from_parcel()
-    example.connect_database(db_param, table_name="FullArizona", drop=True)
-
-    maricopa = {'coordinates': list(), 'crs': 'epsg:4326'}
-    with open('maricopa_poly.geojson', 'r') as handle:
-        tmp = json.load(handle)
-        maricopa['coordinates'] = tmp['geometry'][0]['coordinates']
-    example.set_bounding(apn_bounding=maricopa)
-
+    example.set_bounding(wkt_filepath='maricopa_poly.wkt', wkt_crs='epsg:4326')
     # example.set_bounding()
     example.find_maz_in_bounds()
     example.assign_maz_per_apn(write_to_database=True)
