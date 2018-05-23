@@ -3,10 +3,12 @@ import pyproj
 import getpass
 import pymysql as sql
 from functools import partial
+import geopandas as gpd
 # from shapely.wkt import load
 import shapely.wkt as wkt
 from shapely.ops import transform
 from shapely.geometry import shape, polygon, LineString
+import shapely
 
 
 class LinkingApnToMaz:
@@ -60,8 +62,6 @@ class LinkingApnToMaz:
         self.table_name = table_name
         self.db_name = database['db']
         try:
-            # self.conn = pymysql.connect(host='localhost',user='root',
-            #       password='Am1chne>', db='linkingApnToMaz')
             self.conn = sql.connect(**database)
             print("System Level DB created")
         except KeyError:
@@ -75,32 +75,36 @@ class LinkingApnToMaz:
             self.cur.execute(exec_str)
             self.conn.commit()
 
-    def set_bounding(self, wkt_filepath=None, wkt_crs=None):
-        '''Allows the user to specify a subsection of the entered area to evaluate'''
-        # Setting bounding on the map for reduced APN eval. based on MAZ
-        if (wkt_filepath is not None) and (wkt_crs is not None):
-            wkt_text = str
-            with open(wkt_filepath, 'r') as handle:
-                wkt_text = handle.read()
-            bounding_from_inp = wkt.loads(wkt_text)
-            proj_to_map = partial(pyproj.transform, pyproj.Proj(
-                init=wkt_crs), pyproj.Proj(init=('epsg:{}').format(self.crs)))
-            bounding_for_maz = transform(proj_to_map, bounding_from_inp)
+    def set_bounding(self, geojson_filepath=None, geojson_crs=None):
+        '''Allows the user to specify a subsection of the area to evaluate.
+            This subsection will be identified by MAZ ID's.'''
+        if (geojson_filepath is not None) and (geojson_crs is not None):
+            json_obj = None
+            with open(geojson_filepath, 'r', encoding="ISO-8859-1") as handle:
+                json_obj = json.load(handle)
+            for feature in json_obj['features']:
+                if feature['properties']['NAME'] == "Maricopa":
+                    json_obj['features'] = [feature]
+                    break
+
+            shp = shapely.geometry.shape(json_obj['features'][0]['geometry'])
+            tmp = gpd.GeoSeries([shp])
+            tmp.crs = {'init': "epsg:4326"}
+            tmp_w_update_crs = tmp.to_crs({'init': 'epsg:2223'})
+            bounding_for_maz = tmp_w_update_crs[0]
 
         else:
-            default_bounding = polygon.Polygon(
-                [(649054, 896498), (649192, 888749), (665535, 896129), (663998, 889026)])
-            proj_to_map = partial(pyproj.transform, pyproj.Proj(
-                init='epsg:2223'), pyproj.Proj(init=('epsg:{}').format(self.crs)))
-            bounding_for_maz = transform(proj_to_map, default_bounding)
+            default_obj = {
+                'type': 'Polygon',
+                'coordinates': [[[649054, 896498], [649192, 888749], [665535, 896129], [663998, 889026]]]}
+            default_shp = shapely.geometry.shape(default_obj)
+            tmp = gpd.GeoSeries([default_shp])
+            tmp.crs = {'init': 'epsg:2223'}
+            bounding_for_maz = tmp.to_crs({'init': f'epsg:{self.crs}'})[0]
         self.bounding_for_maz = bounding_for_maz
 
         print("Boundries set!")
         return bounding_for_maz
-        # for index, point in enumerate(data['geometry'][0]['coordinates']):
-        #     data['geometry'][0]['coordinates'][index] = pyproj.transform(epsg_4326, epsg_2223, point[0], point[1])
-
-        # self.bounding_for_maz = shape(data['geometry'][0])
 
     def find_maz_in_bounds(self):
         print("Finding MAZ in bounds")
@@ -156,16 +160,17 @@ class LinkingApnToMaz:
 
 if __name__ == "__main__":
     files = {'parcel': '../Data/parcel.geojson', 'maz': '../Data/maz.geojson'}
-    pw = getpass.getpass()
+    # pw = getpass.getpass()
     db_param = {'user': 'root', 'db': 'linkingApnToMaz',
-                'host': 'localhost', 'password': pw}
+                'host': 'localhost', 'password': 'Am1chne>'}
 
     example = LinkingApnToMaz()
     example.connect_database(db_param, table_name="FullArizona", drop=True)
     example.load_maz(files['maz'])
     example.load_parcel(files['parcel'])
     example.set_crs_from_parcel()
-    example.set_bounding(wkt_filepath='maricopa_poly.wkt', wkt_crs='epsg:4326')
     # example.set_bounding()
+    example.set_bounding(
+        geojson_filepath='../Data/gz_2010_us_050_00_5m.json', geojson_crs='epsg:4326')
     example.find_maz_in_bounds()
     example.assign_maz_per_apn(write_to_database=True)

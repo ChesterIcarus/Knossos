@@ -44,6 +44,8 @@ class AgentPlansToJson:
 
         for actor_id in list(self.plan_dict):
             sorted(self.plan_dict[actor_id], key=lambda x: x["to_sort"])
+
+    def add_home_act(self):
             # home_act =
             # self.plan_dict[actor_id] = s
 
