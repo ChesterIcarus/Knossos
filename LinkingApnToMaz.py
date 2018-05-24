@@ -166,7 +166,7 @@ class LinkingApnToMaz:
                     else:
                         resp = input(
                             "Would you like to write the data to a JSON file? y/n")
-                        if resp == y:
+                        if resp == 'y':
                             f_name = input(
                                 "Please enter entire filename (eg. 'test.json')")
                             with open(f_name, 'w+') as handle:
