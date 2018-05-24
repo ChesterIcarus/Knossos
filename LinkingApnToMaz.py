@@ -199,8 +199,8 @@ class LinkingApnToMaz:
                         print(
                             f'Unable to write to file due to:\n{file_exep}')
         if write_to_database is True:
-            print("Writing to database")
-            print(len(self.db_insert))
+            print(
+                f"Writing {len(self.db_insert)} valid MAZ - APN relations to database")
             self.cur.executemany(
                 f"INSERT INTO {self.db_name}.{self.table_name} values (%s,%s,%s,%s)", self.db_insert)
             self.conn.commit()
