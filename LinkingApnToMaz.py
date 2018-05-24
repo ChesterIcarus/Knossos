@@ -152,8 +152,8 @@ class LinkingApnToMaz:
                 if temp_point.within(self.bounding_for_maz):
                     for maz in maz_shape_list:
                         if temp_point.within(maz[0]):
-                            self.db_insert.append(tuple([temp_point.coords.x,
-                                                         temp_point.coords.y,
+                            self.db_insert.append(tuple([temp_point.coords[0],
+                                                         temp_point.coords[1],
                                                          feature['properties']['APN'],
                                                          maz[1]]))
             except Exception as general_ex:
