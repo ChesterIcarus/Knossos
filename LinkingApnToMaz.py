@@ -1,4 +1,5 @@
 import json
+import geojson
 import pyproj
 import getpass
 import pymysql as sql
@@ -135,7 +136,7 @@ class LinkingApnToMaz:
         if interim_json:
             with open(interim_path, 'w+') as handle:
                 try:
-                    json.dump(maz_shape_list, handle)
+                    geojson.dump(maz_shape_list, handle)
                     print(f'JSON object wrote to {interim_path}')
                 except Exception as e_:
                     print(f'Unable to write JSON:\n{e_}')
@@ -173,7 +174,7 @@ class LinkingApnToMaz:
                                     "Please enter entire filename (eg. 'test.json')\n")
                                 with open(f_name, 'w+') as handle:
                                     try:
-                                        json.dump({
+                                        geojson.dump({
                                             "db_insert": self.db_insert,
                                             "temp_point": temp_point if (temp_point is not None) else None,
                                             "temp_shape": temp_shape if (temp_shape is not None) else None},
@@ -189,7 +190,7 @@ class LinkingApnToMaz:
                     "Please enter entire filename (eg. 'test.json')\n")
                 with open(f_name, 'w+') as handle:
                     try:
-                        json.dump({
+                        geojson.dump({
                             "db_insert": self.db_insert,
                             "temp_point": temp_point if (temp_point is not None) else None,
                             "temp_shape": temp_shape if (temp_shape is not None) else None},
@@ -197,7 +198,6 @@ class LinkingApnToMaz:
                     except Exception as file_exep:
                         print(
                             f'Unable to write to file due to:\n{file_exep}')
-
         if write_to_database is True:
             print("Writing to database")
             print(len(self.db_insert))
