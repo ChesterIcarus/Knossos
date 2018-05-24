@@ -137,7 +137,7 @@ class LinkingApnToMaz:
             with open(maz_bounds_path, 'w+') as handle:
                 try:
                     tmp = [{"coordinates": f[0].exterior.coords,
-                            "type": f[0].type()} for f in maz_shape_list]
+                            "type": f[0].geom_type} for f in maz_shape_list]
                     geojson.dump(tmp, handle)
                     print(f'JSON object wrote to {maz_bounds_path}')
                 except Exception as e_:
