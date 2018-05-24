@@ -127,7 +127,7 @@ class LinkingApnToMaz:
                 tuple([shape(maz['geometry']), maz['properties']['MAZ_ID_10']]))
         return ret_list
 
-    def assign_maz_per_apn(self, write_to_database=False, interim_json=False, interim_path="valid_maz_for_bounds.json"):
+    def assign_maz_per_apn(self, write_to_database=False, write_json=False, json_path="MAZ_by_APN.json", maz_bounds_json=False, maz_bounds_path="valid_maz_for_bounds.json"):
         # "Meat" of the module, connection MAZ, APN, and osm_id
         # This creates the output to be used in agent plan generation
         print("Assigning MAZ per APN")
@@ -205,6 +205,17 @@ class LinkingApnToMaz:
                 f"INSERT INTO {self.db_name}.{self.table_name} values (%s,%s,%s,%s)", self.db_insert)
             self.conn.commit()
             self.conn.close()
+        if write_json:
+            with open(json_path, 'w+') as handle:
+                try:
+                    try:
+                        json.dump(self.db_insert, handle)
+                    except Exception as excep_2:
+                        geojson.dump(self.db_insert, handle)
+                except Exception as excep_1:
+                    print(
+                        f"Unable to write final MAZ - APN relations to file: {json_path} due to:\n{excep_1}")
+
         print("MAZ\'s assigned")
 
 
@@ -223,4 +234,5 @@ if __name__ == "__main__":
     example.set_bounding(
         geojson_filepath='../Data/gz_2010_us_050_00_5m.json', geojson_crs='epsg:4326')
     example.find_maz_in_bounds()
-    example.assign_maz_per_apn(write_to_database=True, interim_json=True)
+    example.assign_maz_per_apn(
+        write_to_database=True, write_json=True, interim_json=True)

@@ -212,34 +212,29 @@ class PlanToMatplan(object):
                         orig_apn = self.actor_dict[row[1]][len(self.actor_dict[row[1]])-1]['destAPN']
                         prior_maz = self.actor_dict[row[1]][len(self.actor_dict[row[1]])-1]['origAPN']
                     else:
-                        # exec_str = ("SELECT * FROM {0} WHERE {1} = {2}").format(apn_table_name, apn_selector, row[2])
-                        # self.apn_cur.execute(exec_str)
-                        # orig_apn = self.apn_cur.fetchall()
                         orig_apn = self.apn_dict[row[2]]
-                        if len(orig_apn) <= 0: orig_apn = None; break
+                        if len(orig_apn) <= 0: 
+                            orig_apn = None
+                            break
                         rand_val = np.random.randint(len(orig_apn))
                         orig_x = orig_apn[rand_val][0]
                         orig_y = orig_apn[rand_val][1]
                         orig_apn = orig_apn[rand_val][2]
 
                     if (row[3] not in self.valid_maz_list):
-                        # exec_str = ("SELECT * FROM {0} WHERE {1} = {2}"\
-                        #     ).format(apn_table_name, apn_selector, prior_maz)
-                        # self.apn_cur.execute(exec_str)
-                        # dest_apn = self.apn_cur.fetchall()
                         dest_apn = self.apn_dict[prior_maz]
-                        if len(dest_apn) <= 0: dest_apn = None; break
+                        if len(dest_apn) <= 0:
+                            dest_apn = None
+                            break
                         rand_val = np.random.randint(len(dest_apn))
                         dest_x = dest_apn[rand_val][0]
                         dest_y = dest_apn[rand_val][1]
                         dest_apn = dest_apn[rand_val][2]
                     else:
-                        # exec_str = ("SELECT * FROM {0} WHERE {1} = {2}"\
-                        #     ).format(apn_table_name, apn_selector, row[3])
-                        # self.apn_cur.execute(exec_str)
-                        # dest_apn = self.apn_cur.fetchall()
                         dest_apn = self.apn_dict[row[3]]
-                        if len(dest_apn) <= 0: dest_apn = None; break
+                        if len(dest_apn) <= 0:
+                            dest_apn = None
+                            break
                         rand_val = np.random.randint(len(dest_apn))
                         dest_x = dest_apn[rand_val][0]
                         dest_y = dest_apn[rand_val][1]
@@ -265,8 +260,6 @@ class PlanToMatplan(object):
                                                 'arrivalTimeSec': arrive_time_in_secs,
                                                 'finalDepartTimeSec': depart_time_in_secs,
                                                 'timeAtDestSec': at_dest_time_in_secs}
-                # prev_act = act_dict
-                # prev_act['origMaz'] = row[2]
                 self.actor_dict[row[1]].append(act_dict)
             count = 0
             orig_apn = None
@@ -293,8 +286,6 @@ class PlanToMatplan(object):
                             'arrivalTimeSec': y['arrivalTimeSec'], # 11
                             'timeAtDestSec': y['timeAtDestSec']} # 12
                 insert_list.append(tuple(data_dict.values()))
-                # exec_str = (f"INSERT INTO {self.plan_table_name} VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)")
-                # self.plan_cur.execute(exec_str, tuple(data_dict.values()))
         exec_str = (f"INSERT INTO {self.plan_table_name} VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)")
         self.plan_cur.executemany(exec_str, insert_list)
         self.plan_conn.commit()
