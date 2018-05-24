@@ -141,19 +141,14 @@ class LinkingApnToMaz:
                     print(e_)
         print(f"There are {len(maz_shape_list)} MAZ\'s")
 
+        pause_on_execp = True
         for feature in self.parcel_set['features']:
             temp_shape = shape(feature['geometry'])
             try:
                 temp_point = temp_shape.representative_point()
-                if temp_point.within(self.bounding_for_maz):
-                    for maz in maz_shape_list:
-                        if temp_point.within(maz[0]):
-                            self.db_insert.append(tuple([temp_point.coords.x,
-                                                         temp_point.coords.y,
-                                                         feature['properties']['APN'],
-                                                         maz[1]]))
             except (TypeError, ValueError):
                 temp_point = temp_shape
+            try:
                 if temp_point.within(self.bounding_for_maz):
                     for maz in maz_shape_list:
                         if temp_point.within(maz[0]):
@@ -161,6 +156,25 @@ class LinkingApnToMaz:
                                                          temp_point.coords.y,
                                                          feature['properties']['APN'],
                                                          maz[1]]))
+            except Exception as general_ex:
+                if pause_on_execp:
+                    print(general_ex)
+                    resp = input(
+                        'Pause for future exceptions? y/n ("y" if you would like the option to write the current data to a JSON file)')
+                    if resp == "n":
+                        pause_on_execp = False
+                    else:
+                        resp = input(
+                            "Would you like to write the data to a JSON file? y/n")
+                        if resp == y:
+                            f_name = input(
+                                "Please enter entire filename (eg. 'test.json')")
+                            with open(f_name, 'w+') as handle:
+                                try:
+                                    json.dump(self.db_insert, handle)
+                                except Exception as file_exep:
+                                    print(
+                                        f'Unable to write to file due to:\n{file_exep}')
 
         if write_to_database is True:
             print("Writing to database")
