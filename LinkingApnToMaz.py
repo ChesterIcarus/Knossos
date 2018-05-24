@@ -152,8 +152,8 @@ class LinkingApnToMaz:
                 if temp_point.within(self.bounding_for_maz):
                     for maz in maz_shape_list:
                         if temp_point.within(maz[0]):
-                            self.db_insert.append(tuple([temp_point.coords[0],
-                                                         temp_point.coords[1],
+                            self.db_insert.append(tuple([temp_point.x,
+                                                         temp_point.y,
                                                          feature['properties']['APN'],
                                                          maz[1]]))
             except Exception as general_ex:
@@ -171,7 +171,10 @@ class LinkingApnToMaz:
                                 "Please enter entire filename (eg. 'test.json')")
                             with open(f_name, 'w+') as handle:
                                 try:
-                                    json.dump(self.db_insert, handle)
+                                    json.dump({
+                                        "db_insert": self.db_insert,
+                                        "temp_point": temp_point,
+                                        "temp_shape": temp_shape}, handle)
                                 except Exception as file_exep:
                                     print(
                                         f'Unable to write to file due to:\n{file_exep}')
