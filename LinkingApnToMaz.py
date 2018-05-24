@@ -8,7 +8,7 @@ import geopandas as gpd
 # from shapely.wkt import load
 import shapely.wkt as wkt
 from shapely.ops import transform
-from shapely.geometry import shape, polygon, LineString
+from shapely.geometry import shape, polygon, LineString, mapping
 import shapely
 
 
@@ -133,11 +133,12 @@ class LinkingApnToMaz:
         print("Assigning MAZ per APN")
         print(f"There are {len(self.parcel_set['features'])} total features")
         maz_shape_list = self.create_maz_shape_list(self.bounded_maz_set)
-        if interim_json:
-            with open(interim_path, 'w+') as handle:
+        if maz_bounds_json:
+            with open(maz_bounds_path, 'w+') as handle:
                 try:
-                    geojson.dump(maz_shape_list, handle)
-                    print(f'JSON object wrote to {interim_path}')
+                    tmp = [mapping(f[0].geom) for f in maz_shape_list]
+                    geojson.dump(tmp, handle)
+                    print(f'JSON object wrote to {maz_bounds_path}')
                 except Exception as e_:
                     print(f'Unable to write JSON:\n{e_}')
         print(f"There are {len(maz_shape_list)} MAZ\'s")
