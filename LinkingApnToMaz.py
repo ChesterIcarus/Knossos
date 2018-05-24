@@ -126,27 +126,41 @@ class LinkingApnToMaz:
                 tuple([shape(maz['geometry']), maz['properties']['MAZ_ID_10']]))
         return ret_list
 
-    def assign_maz_per_apn(self, write_to_database=False):
+    def assign_maz_per_apn(self, write_to_database=False, interim_json=False, interim_path="valid_maz_for_bounds.json"):
         # "Meat" of the module, connection MAZ, APN, and osm_id
         # This creates the output to be used in agent plan generation
         print("Assigning MAZ per APN")
         print(f"There are {len(self.parcel_set['features'])} total features")
         maz_shape_list = self.create_maz_shape_list(self.bounded_maz_set)
+        if interim_json:
+            with open(interim_path, 'w+') as handle:
+                try:
+                    json.dump(maz_shape_list, handle)
+                    print(f'JSON object wrote to {interim_path}')
+                except Exception as e_:
+                    print(e_)
         print(f"There are {len(maz_shape_list)} MAZ\'s")
 
         for feature in self.parcel_set['features']:
             temp_shape = shape(feature['geometry'])
             try:
                 temp_point = temp_shape.representative_point()
+                if temp_point.within(self.bounding_for_maz):
+                    for maz in maz_shape_list:
+                        if temp_point.within(maz[0]):
+                            self.db_insert.append(tuple([temp_point.coords.x,
+                                                         temp_point.coords.y,
+                                                         feature['properties']['APN'],
+                                                         maz[1]]))
             except (TypeError, ValueError):
                 temp_point = temp_shape
-            if temp_point.within(self.bounding_for_maz):
-                for maz in maz_shape_list:
-                    if temp_point.within(maz[0]):
-                        self.db_insert.append(tuple([temp_point.x,
-                                                     temp_point.y,
-                                                     feature['properties']['APN'],
-                                                     maz[1]]))
+                if temp_point.within(self.bounding_for_maz):
+                    for maz in maz_shape_list:
+                        if temp_point.within(maz[0]):
+                            self.db_insert.append(tuple([temp_point.coords.x,
+                                                         temp_point.coords.y,
+                                                         feature['properties']['APN'],
+                                                         maz[1]]))
 
         if write_to_database is True:
             print("Writing to database")
@@ -173,4 +187,4 @@ if __name__ == "__main__":
     example.set_bounding(
         geojson_filepath='../Data/gz_2010_us_050_00_5m.json', geojson_crs='epsg:4326')
     example.find_maz_in_bounds()
-    example.assign_maz_per_apn(write_to_database=True)
+    example.assign_maz_per_apn(write_to_database=True, interim_json=True)
