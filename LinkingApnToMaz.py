@@ -236,4 +236,4 @@ if __name__ == "__main__":
         geojson_filepath='../Data/gz_2010_us_050_00_5m.json', geojson_crs='epsg:4326')
     example.find_maz_in_bounds()
     example.assign_maz_per_apn(
-        write_to_database=True, write_json=True, interim_json=True)
+        write_to_database=True, write_json=True, maz_bounds_json=True)
