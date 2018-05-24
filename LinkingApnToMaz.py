@@ -127,6 +127,23 @@ class LinkingApnToMaz:
                 tuple([shape(maz['geometry']), maz['properties']['MAZ_ID_10']]))
         return ret_list
 
+    def prompt_geojson_dump(self, data, data_name, temp_point=None, temp_shape=None):
+        resp = input(
+            f"Would you like to write the data for {data_name} to a JSON file? y/n\n")
+        if resp == 'y':
+            f_name = input(
+                "Please enter entire filename (eg. 'test.json')\n")
+            with open(f_name, 'w+') as handle:
+                try:
+                    geojson.dump({
+                        "db_insert": data,
+                        "temp_point": temp_point if (temp_point is not None) else None,
+                        "temp_shape": temp_shape if (temp_shape is not None) else None},
+                        handle)
+                except Exception as file_exep:
+                    print(
+                        f'Unable to write to file due to:\n{file_exep}')
+
     def assign_maz_per_apn(self, write_to_database=False, write_json=False, json_path="MAZ_by_APN.json", maz_bounds_json=False, maz_bounds_path="valid_maz_for_bounds.json"):
         # "Meat" of the module, connection MAZ, APN, and osm_id
         # This creates the output to be used in agent plan generation
@@ -169,37 +186,12 @@ class LinkingApnToMaz:
                         if resp == "n":
                             pause_on_execp = False
                         else:
-                            resp = input(
-                                "Would you like to write the data to a JSON file? y/n\n")
-                            if resp == 'y':
-                                f_name = input(
-                                    "Please enter entire filename (eg. 'test.json')\n")
-                                with open(f_name, 'w+') as handle:
-                                    try:
-                                        geojson.dump({
-                                            "db_insert": self.db_insert,
-                                            "temp_point": temp_point if (temp_point is not None) else None,
-                                            "temp_shape": temp_shape if (temp_shape is not None) else None},
-                                            handle)
-                                    except Exception as file_exep:
-                                        print(
-                                            f'Unable to write to file due to:\n{file_exep}')
+                            self.prompt_geojson_dump(
+                                self.db_insert, "Database Insert", temp_shape=temp_shape, temp_point=temp_point)
+
         except KeyboardInterrupt as kb_int:
-            resp = input(
-                "Would you like to write the data to a JSON file? y/n\n")
-            if resp == 'y':
-                f_name = input(
-                    "Please enter entire filename (eg. 'test.json')\n")
-                with open(f_name, 'w+') as handle:
-                    try:
-                        geojson.dump({
-                            "db_insert": self.db_insert,
-                            "temp_point": temp_point if (temp_point is not None) else None,
-                            "temp_shape": temp_shape if (temp_shape is not None) else None},
-                            handle)
-                    except Exception as file_exep:
-                        print(
-                            f'Unable to write to file due to:\n{file_exep}')
+            self.prompt_geojson_dump(
+                self.db_insert, "Database Insert", temp_shape=temp_shape, temp_point=temp_point)
         if write_to_database is True:
             print(
                 f"Writing {len(self.db_insert)} valid MAZ - APN relations to database")
@@ -210,15 +202,14 @@ class LinkingApnToMaz:
         if write_json:
             with open(json_path, 'w+') as handle:
                 try:
-                    try:
-                        json.dump(self.db_insert, handle)
-                    except Exception as excep_2:
-                        geojson.dump(self.db_insert, handle)
+                    json.dump(self.db_insert, handle)
                 except Exception as excep_1:
-                    print(
-                        f"Unable to write final MAZ - APN relations to file: {json_path} due to:\n{excep_1}")
-
-        print("MAZ\'s assigned")
+                    try:
+                        geojson.dump(self.db_insert, handle)
+                    except Exception as excep_2:
+                        print(
+                            f"Unable to write final MAZ - APN relations to file: {json_path} due to:\n{excep_1}")
+        print("MAZ - APN relations wrote to appropiate destinations")
 
 
 if __name__ == "__main__":
