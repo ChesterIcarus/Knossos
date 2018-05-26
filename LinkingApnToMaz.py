@@ -3,7 +3,9 @@ import geojson
 import pyproj
 import getpass
 import rtree
+import pandas as pd
 import pymysql as sql
+from collections import defaultdict
 import tables as tb
 from functools import partial
 import osmnx as ox
@@ -13,11 +15,11 @@ from shapely.geometry import shape, polygon, LineString, mapping, MultiPolygon
 import shapely
 from multiprocessing import Pool
 
-MAZ_DF = None
+MAZ_DF = gpd.GeoDataFrame()
 MULTITHREAD = True
 POOLSIZE = 8
-MAZ_GEOMETRY = gpd.GeoDataFrame()
-MAZ_SLICES = list()
+# MAZ_GEOMETRY = gpd.GeoDataFrame()
+MAZ_SLICES = defaultdict(list)
 
 
 def multiproc_maz_apn_assoc(parcel_set):
@@ -31,8 +33,8 @@ def multiproc_maz_apn_assoc(parcel_set):
         except Exception:
             parcel_point = parcel_shape
         try:
-            for index, row in enumerate(MAZ_GEOMETRY.iloc[::]):
-                if row["MAZ"].contains(parcel_point):
+            for index, row in enumerate(MAZ_DF.iloc['MAZ'][0:-1]):
+                if MAZ_DF["geometry"][index].contains(parcel_point):
                     ret_list.append(tuple([parcel_point.x,
                                            parcel_point.y,
                                            parcel_point['properties']['APN'], row["MAZ"]]))
@@ -143,8 +145,9 @@ class LinkingApnToMaz:
         '''Allows the user to specify a subsection of the area to evaluate.
             This subsection will be identified by MAZ ID's.'''
         if (geojson_filepath is not None) and (geojson_crs is not None):
-            tmp = gpd.read_file('../Data/gz_2010_us_050_00_5m.geojson')
-            tmp.crs = {'init': "epsg:4326"}
+            # tmp = gpd.read_file('../Data/gz_2010_us_050_00_5m.geojson')
+            tmp = gpd.read_file(geojson_filepath)
+            tmp.crs = {'init': geojson_crs}
             tmp_w_update_crs = tmp.to_crs({'init': 'epsg:2223'})
             for index, name in enumerate(tmp_w_update_crs['NAME']):
                 if name == "Maricopa":
@@ -159,63 +162,73 @@ class LinkingApnToMaz:
             tmp = gpd.GeoSeries([default_shp])
             tmp.crs = {'init': 'epsg:2223'}
             bounding_for_maz = tmp.to_crs({'init': f'epsg:{self.crs}'})[0]
+            df = pd.DataFrame({'bound': [1]})
             self.bounding_for_maz = gpd.GeoDataFrame(
-                bounding_for_maz, crs='epsg:2223')
+                df, geometry=[bounding_for_maz])
 
         print("Boundries set!")
-        return bounding_for_maz
+        # return bounding_for_maz
 
     def find_maz_in_bounds(self):
         self.bounded_maz_df = gpd.sjoin(
             self.maz_set, self.bounding_for_maz, how='left')
+        MAZ_DF = self.bounded_maz_df
         print(
-            f"Found {len(self.bounded_maz_set['geometry'])} MAZ\'s in bounds")
+            f"Found {len(self.bounded_maz_df['geometry'])} MAZ\'s in bounds")
 
     def assign_maz_per_apn(self, write_to_database=False, write_to_h5f=True, write_json=False, json_path="MAZ_by_APN.json", maz_bounds_read=False, maz_bounds_json=False, maz_bounds_path="valid_maz_for_bounds.json"):
 
         if not maz_bounds_read:
-            maz_shape_list = self.create_maz_shape_list(
-                self.bounded_maz_set, maz_bounds_json, maz_bounds_path)
+            self.find_maz_in_bounds()
         else:
             with open(maz_bounds_path, 'r') as handle:
                 MAZ_DF = gpd.read_file(handle)
                 MAZ_DF.crs = {'init': 'epsg:2223'}
         print(f"There are {len(self.parcel_set['features'])} total features")
-        print(f"There are {len(maz_shape_list)} total MAZ\'s")
-        temp_point = None
-        temp_shape = None
+        print(f"There are {len(MAZ_DF['geometry'])} total MAZ\'s")
         tmp_list = list()
-        for row in MAZ_DF.iloc[0:-1]:
-            tmp_list.append(MultiPolygon([row]))
+        for index, row in enumerate(MAZ_DF['geometry'].iloc[0:-1]):
+            tmp_list.append(tuple([MultiPolygon([row]), MAZ_DF['MAZ'][index]]))
+
         for row in tmp_list:
-            tmp = ox.quadrat_cut_geometry(row, 1)
-            MAZ_SLICES.append(tmp)
+            tmp = ox.quadrat_cut_geometry(row[0], 1)
+            MAZ_SLICES[row[1]].append(tmp)
 
-        point_index = self.parcel_set.sindex
-        for maz_sub in MAZ_SLICES:
-            maz_sub = maz_sub.buffer(1e-14).buffer(0)
+        point_index = MAZ_DF.sindex
+        points_within_geo = defaultdict(list)
 
-            possible_matches_index = list(sindex.intersection(poly.bounds))
-            possible_matches = MAZ_GEOMETRY.iloc[possible_matches_index]
-            precise_matches = possible_matches_index
-        if MULTITHREAD == True:
-            pool_size = POOLSIZE
-            with Pool(pool_size) as pool:
-                arg_list = list()
-                self.db_insert = pool.map(multiproc_maz_apn_assoc,
-                                          self.parcel_set['features'])
+        for maz in list(MAZ_SLICES):
+            for maz_slice in maz:
+                maz_sub = maz_slice.buffer(1e-14).buffer(0)
+                possible_matches_index = list(
+                    point_index.intersection(maz_sub.bounds))
+                possible_matches = MAZ_DF['geometry'].iloc[possible_matches_index]
+                precise_matches = possible_matches[possible_matches.intersects(
+                    maz_sub)]
 
+                points_within_geo[maz].append(precise_matches)
+        # if MULTITHREAD == True:
+        #     pool_size = POOLSIZE
+        #     with Pool(pool_size) as pool:
+        #         arg_list = list()
+        #         self.db_insert = pool.map(multiproc_maz_apn_assoc,
+        #                                   self.parcel_set['features'])
+        db_insert = list()
+        for maz in list(points_within_geo):
+            for match in maz:
+                print(match)
+                input()
         if write_to_database:
             print(
-                f"Writing {len(self.db_insert)} valid MAZ - APN relations to database")
+                f"Writing {len(db_insert)} valid MAZ - APN relations to database")
             self.cur.executemany(
-                f"INSERT INTO {self.db_name}.{self.table_name} values (%s,%s,%s,%s)", self.db_insert)
+                f"INSERT INTO {self.db_name}.{self.table_name} values (%s,%s,%s,%s)", db_insert)
             self.conn.commit()
             self.conn.close()
 
         if write_to_h5f:
             new_row = (self.h5f.get_node('/', self.h5f_table_name)).row
-            for row_ in self.db_insert:
+            for row_ in db_insert:
                 new_row['coordX'] = float(row_[0])
                 new_row['coordY'] = float(row_[1])
                 new_row['APN'] = str(row_[2])
@@ -227,10 +240,10 @@ class LinkingApnToMaz:
         if write_json:
             with open(json_path, 'w+') as handle:
                 try:
-                    json.dump(self.db_insert, handle)
+                    json.dump(db_insert, handle)
                 except Exception as excep_1:
                     try:
-                        geojson.dump(self.db_insert, handle)
+                        geojson.dump(db_insert, handle)
                     except Exception as excep_2:
                         print(
                             f"Unable to write final MAZ - APN relations to file: {json_path} due to:\n{excep_1}")
@@ -247,13 +260,14 @@ if __name__ == "__main__":
     # example.connect_database(db_param, table_name="FullArizona", drop=True)
     example.connect_PyTable('h5f_example.hf')
     example.load_maz(files['maz'])
+    print("here")
     example.load_parcel(files['parcel'])
     example.set_crs_from_parcel()
-    example.set_bounding()
+    #example.set_bounding()
     example.set_bounding(
         geojson_filepath='../Data/gz_2010_us_050_00_5m.geojson', geojson_crs='epsg:4326')
     example.find_maz_in_bounds()
-    example.create_maz_shape_list(
-        example.bounded_maz_set, True, "valid_maz_for_bounds.json")
-    # example.assign_maz_per_apn(
-    #     write_to_h5f=True, write_json=True, maz_bounds_json=True)
+    # example.create_maz_shape_list(
+    # example.bounded_maz_set, True, "valid_maz_for_bounds.json")
+    example.assign_maz_per_apn(
+        write_to_h5f=True, write_json=True, maz_bounds_json=True)
