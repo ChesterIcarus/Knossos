@@ -1,4 +1,5 @@
 import json
+import sys
 import geojson
 import pyproj
 import getpass
@@ -176,7 +177,7 @@ class LinkingApnToMaz:
         print(
             f"Found {len(self.bounded_maz_df['geometry'])} MAZ\'s in bounds")
 
-    def assign_maz_per_apn(self, write_to_database=False, write_to_h5f=True, write_json=False, json_path="MAZ_by_APN.json", maz_bounds_read=False, maz_bounds_json=False, maz_bounds_path="valid_maz_for_bounds.json"):
+    def assign_maz_per_apn(self, write_to_database=False, write_to_h5f=False, write_json=False, json_path="MAZ_by_APN.json", maz_bounds_read=False, maz_bounds_json=False, maz_bounds_path="valid_maz_for_bounds.json"):
 
         if not maz_bounds_read:
             self.find_maz_in_bounds()
@@ -253,21 +254,26 @@ class LinkingApnToMaz:
 if __name__ == "__main__":
     files = {'parcel': '../Data/parcel.geojson', 'maz': '../Data/maz.geojson'}
     # pw = getpass.getpass()
-    db_param = {'user': 'root', 'db': 'linkingApnToMaz',
-                'host': 'localhost', 'password': 'Tory199&'}
-    # 'host': 'localhost', 'password': 'Am1chne>'}
+    # db_param = {'user': 'root', 'db': 'linkingApnToMaz',
+    #             'host': 'localhost', 'password': 'Am1chne>'}
     example = LinkingApnToMaz()
+    sys.stdout.flush()
     # example.connect_database(db_param, table_name="FullArizona", drop=True)
     example.connect_PyTable('h5f_example.hf')
+    sys.stdout.flush()
     example.load_maz(files['maz'])
-    print("here")
+    sys.stdout.flush()
     example.load_parcel(files['parcel'])
+    sys.stdout.flush()
     example.set_crs_from_parcel()
-    #example.set_bounding()
+    sys.stdout.flush()
     example.set_bounding(
         geojson_filepath='../Data/gz_2010_us_050_00_5m.geojson', geojson_crs='epsg:4326')
+    sys.stdout.flush()
     example.find_maz_in_bounds()
+    sys.stdout.flush()
     # example.create_maz_shape_list(
     # example.bounded_maz_set, True, "valid_maz_for_bounds.json")
     example.assign_maz_per_apn(
         write_to_h5f=True, write_json=True, maz_bounds_json=True)
+    sys.stdout.flush()
