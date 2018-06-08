@@ -109,12 +109,12 @@ class MagDataToPlansByPidAndMaz:
 
 
 if (__name__ == "__main__"):
-    database = {}
-    pw = getpass.getpass()
-    db_param = {'user': 'root', 'db': 'MagDataToPlansByPidAndMaz',
-                'host': 'localhost', 'password': pw}
+    # pw = getpass.getpass()
+    # db_param = {'user': 'root', 'db': 'MagDataToPlansByPidAndMaz',
+    #             'host': 'localhost', 'password': pw}
     example = MagDataToPlansByPidAndMaz()
-    example.connect_database(db_param, table_name='Example', drop=True)
+    # example.connect_database(db_param, table_name='Example', drop=True)
     example.read_mag_csv("../Data/output_disaggTripList.csv")
-    example.write_mag_to_sql()
-    # example.write_mag_to_file("MagDataToPlan_output_Example.txt")
+    # example.write_mag_to_sql()
+    example.write_mag_to_file(
+        "Data/MagDataToPlan_output_Example_no_indent.json")

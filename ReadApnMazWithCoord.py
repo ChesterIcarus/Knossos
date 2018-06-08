@@ -1,4 +1,5 @@
 import json
+from collections import defaultdict
 
 
 class ReadApnMazWithCoord:
@@ -23,18 +24,21 @@ class ReadApnMazWithCoord:
             self.apn_by_maz_w_coord.append(tuple([apn, maz, x, y]))
         print(f'Found {len(self.apn_by_maz_w_coord)} APN\'s')
 
-    def write_output(self, filepath):
+    def write_comprehensive_data(self, filepath):
         with open(f'{filepath}.json', 'w+') as handle:
             json.dump(self.apn_by_maz_w_coord, handle, indent=1)
         with open(f'{filepath}_dict_APN.json', 'w+') as handle:
             tmp = {x[0]: x[1:4] for x in self.apn_by_maz_w_coord}
             json.dump(tmp, handle, indent=1)
+        all_apn_for_maz = defaultdict(list)
+        for parcel in self.apn_by_maz_w_coord:
+            all_apn_for_maz[parcel[1]].append(
+                tuple([parcel[0], parcel[2], parcel[3]]))
         with open(f'{filepath}_dict_MAZ.json', 'w+') as handle:
-            tmp = {x[1]: [x[0], x[2], x[3]] for x in self.apn_by_maz_w_coord}
-            json.dump(tmp, handle, indent=1)
+            json.dump(all_apn_for_maz, handle, indent=1)
 
 
 if __name__ == '__main__':
     example = ReadApnMazWithCoord('../Data/APN_MAZ_Coord.txt')
     example.process_file()
-    example.write_output('full_maricopa_parcel_w_coord')
+    example.write_comprehensive_data('full_maricopa_parcel_w_coord')
