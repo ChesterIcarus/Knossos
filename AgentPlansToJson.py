@@ -6,23 +6,8 @@ import math
 
 class AgentPlansToJson:
     def __init__(self):
-        print("Converting agents plans from CSV to JSON")
-        self.mode_dict = {
-            "1": "car",
-            "2": "car",
-            "3": "car",
-            "4": "car",
-            "5": "walk",
-            "6": "car",
-            "7": "car",
-            "8": "walk",
-            "9": "car",
-            "10": "car",
-            "11": "walk",
-            "12": "bike",
-            "13": "walk",
-            "14": "car"
-        }
+        print("Converting agents plans from MAZ-trips to APN-trips, outputting results as JSON")
+        
         self.csv_plans = list()
         self.maz_plan_dict = None
         self.apn_per_agent = defaultdict(dict)
@@ -41,15 +26,25 @@ class AgentPlansToJson:
             for trip in self.maz_plan_dict[agent]:
                 # trip[2] is origin MAZ, trip[4] is origin purpose
                 # trip[3] is destination MAZ, trip[5] is destination purpose
-                tmp_hash_list.append(tuple([trip[2], trip[4]]))
-                tmp_hash_list.append(tuple([trip[3], trip[5]]))
-            distinct_dest = set(tmp_hash_list)
+                tmp_hash_list.append(tuple([str(trip[2]), trip[4]]))
+                tmp_hash_list.append(tuple([str(trip[3]), trip[5]]))
+            distinct_dest = set(tuple(tmp_hash_list))
             # For each distict destination (rudimentery analysis currently) assign a single APN
             # This is mapped to the tuple of MAZ/dest combo, which is currently
             # assumed to be unique per agent
+            succ_count = 0
             for dest in list(distinct_dest):
-                self.apn_per_agent[agent][dest] = random.sample(
-                    maz_apn_map[dest[0]], 1)[0]
+                try:
+                    self.apn_per_agent[agent][dest] = random.sample(
+                        maz_apn_map[dest[0]], 1)[0]
+                    succ_count += 1
+                except KeyError:
+                    succ_count = 0
+                    print(list(maz_apn_map)[0:5])
+                    print(f'{succ_count} successful APN\'s')
+                    print(f'Destination: {dest}')
+                    input()
+                    continue
 
     def seconds_to_str(self, seconds):
         hours = str(math.floor(seconds / (60 * 60)))
@@ -73,14 +68,14 @@ class AgentPlansToJson:
                 arrival_time_sec = (float(trip[9]) * 60) + 16200
                 arrival_time_str = self.seconds_to_str(arrival_time_sec)
                 # Finding the apn's based off the unique id tuple from @assign_apn_to_agents
-                apn_uid_tup_orig = tuple([trip[2], trip[4]])
-                apn_uid_tup_dest = tuple([trip[3], trip[5]])
+                apn_uid_tup_orig = tuple([str(trip[2]), trip[4]])
+                apn_uid_tup_dest = tuple([str(trip[3]), trip[5]])
                 orig_apn = self.apn_per_agent[agent][apn_uid_tup_orig]
                 dest_apn = self.apn_per_agent[agent][apn_uid_tup_dest]
 
                 self.apn_plan_dict[agent].append({
                     "to_sort": depart_time_sec,
-                    "mode": self.mode_dict[trip[6]],
+                    "mode": trip[6],
                     "depart_time": depart_time_str,
                     "arrival_time": arrival_time_str,
                     "orig": {
@@ -100,17 +95,17 @@ class AgentPlansToJson:
 
     def add_home_act(self):
         print('')
-        # home_act =
-        # self.plan_dict[actor_id] = s
 
     def write_json(self, filename):
         with open(filename, "w+") as handle:
-            json.dump(self.maz_plan_dict, handle, indent=1)
+            json.dump(self.apn_plan_dict, handle, indent=1)
 
 
 if __name__ == "__main__":
     example = AgentPlansToJson()
     example.read_json_maz_plans(
         'Data/MagDataToPlan_output_Example_no_indent.json')
+    example.assign_apn_to_agents(
+        'Data/full_maricopa_parcel_w_coord_dict_MAZ.json')
     example.to_dict()
-    example.write_json("actor_plans_apn_coord.json")
+    example.write_json("Data/actor_plans_apn_coord.json")

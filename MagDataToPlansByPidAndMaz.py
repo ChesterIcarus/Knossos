@@ -28,6 +28,22 @@ class MagDataToPlansByPidAndMaz:
         "10": "s",
         "15": "w",
     }
+    mode_dict = {
+            "1": "car",
+            "2": "car",
+            "3": "car",
+            "4": "car",
+            "5": "walk",
+            "6": "car",
+            "7": "car",
+            "8": "walk",
+            "9": "car",
+            "10": "car",
+            "11": "walk",
+            "12": "bike",
+            "13": "walk",
+            "14": "car"
+        }
 
     def __init__(self):
         print("MAG Data to Plans by PID and MAZ initialized")
@@ -87,12 +103,11 @@ class MagDataToPlansByPidAndMaz:
 
             orig_purp = self.purpose_dict[str(actor[22])]
             dest_purp = self.purpose_dict[str(actor[23])]
+            mode = self.mode_dict[int(actor[24])]
 
-            actor_data = [uuid, pid, int(actor[19]), int(actor[21]), orig_purp, dest_purp, int(actor[24]),
+            actor_data = [uuid, pid, int(actor[19]), int(actor[21]), orig_purp, dest_purp, mode,
                           float(actor[26]), float(actor[27]), float(actor[31]), float(actor[32])]
             self.actor_dict[pid].append(actor_data)
-        # for actor in self.actor_dict:
-        #     self.actor_dict[actor] = sorted(self.actor_dict[actor], key=lambda x: x[7])
 
     def write_mag_to_sql(self):
         for actor in self.actor_dict:
