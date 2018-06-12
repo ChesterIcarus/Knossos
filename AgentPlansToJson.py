@@ -99,9 +99,6 @@ class AgentPlansToJson:
         for agent in list(self.apn_plan_dict):
             sorted(self.apn_plan_dict[agent], key=lambda x: x["to_sort"])
 
-    def add_home_act(self):
-        print('')
-
     def write_json(self, filename):
         with open(filename, "w+") as handle:
             json.dump(self.apn_plan_dict, handle, indent=1)
@@ -110,8 +107,8 @@ class AgentPlansToJson:
 if __name__ == "__main__":
     example = AgentPlansToJson()
     example.read_json_maz_plans(
-        'Data/MagDataToPlan_output_Example_no_indent.json', __testing__=True)
+        'Data/MagDataToPlan_output_Example_no_indent.json', __testing__=False)
     example.assign_apn_to_agents(
         'Data/full_maricopa_parcel_w_coord_dict_MAZ.json')
     example.to_dict()
-    example.write_json("Data/samp_actor_plans_apn_coord.json")
+    example.write_json("Data/full_actor_plans_apn_coord.json")

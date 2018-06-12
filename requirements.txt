@@ -6,10 +6,6 @@ pymysql
 tables
 osmnx
 geopandas
-<<<<<<< HEAD
 shapely
 dbfread
 h5py
-=======
-shapely
->>>>>>> 83879226ec30d938f2e72de6ab6761aee58f61d3

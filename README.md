@@ -2,7 +2,7 @@
 
 Developed by ChesterLab @ Arizona State University: Civil Engineering and the Built Environment
 
-The data cleaning and preparation module for Icarus, located at [Icarus](https://github.com/ChesterLab/Icarus).
+The data cleaning and preparation module for Icarus, located at [Icarus](https://github.com/ChesterIcarus/Icarus).
 Icarus simulates agent level travel throughout the course of a day, using 'Agent Based Model' data provided
 by the Maricopa Association of Governments, which is currently not publicly available due to confidentiality
 concerns. This project is currently not runnable without the data format it's built for, though in the near
