@@ -29,21 +29,21 @@ class MagDataToPlansByPidAndMaz:
         "15": "w",
     }
     mode_dict = {
-            "1": "car",
-            "2": "car",
-            "3": "car",
-            "4": "car",
-            "5": "walk",
-            "6": "car",
-            "7": "car",
-            "8": "walk",
-            "9": "car",
-            "10": "car",
-            "11": "walk",
-            "12": "bike",
-            "13": "walk",
-            "14": "car"
-        }
+        "1": "car",
+        "2": "car",
+        "3": "car",
+        "4": "car",
+        "5": "walk",
+        "6": "car",
+        "7": "car",
+        "8": "walk",
+        "9": "car",
+        "10": "car",
+        "11": "walk",
+        "12": "bike",
+        "13": "walk",
+        "14": "car"
+    }
 
     def __init__(self):
         print("MAG Data to Plans by PID and MAZ initialized")
@@ -51,34 +51,6 @@ class MagDataToPlansByPidAndMaz:
         self.cur = None
         self.conn = None
         self.table_name = None
-
-    def connect_database(self, database, table_name, drop):
-        '''Connecting to Database used to store the output, if the output is to be written to a database.
-        Input is of the form: database =
-            {'host': port, 'user': Valid Database User,
-            'password': Password for the specified user, 'db': Database to use},
-            table_name =  Name of the table to use (Must exist if drop is False),
-            drop =  Boolean indicating if we are to drop existing table='tablename
-        Output is stored in the form: (X Coordinate, Y Coordinate, APN Identifier, MAZ Identifier)'''
-
-        print("CSV to MySQL database conversion initiated")
-        self.conn = mysql.connect(**database)
-        self.cur = self.conn.cursor()
-        self.table_name = table_name
-        if drop == True:
-            self.cur.execute(("DROP TABLE if exists {}").format(table_name))
-            self.cur.execute(('CREATE TABLE {0} \n'
-                              '            (unique_id VARCHAR(25),\n'
-                              '            pid VARCHAR(20),\n'
-                              '            orig_maz MEDIUMINT,\n'
-                              '            dest_maz MEDIUMINT,\n'
-                              '            orig_purp CHAR(2),\n'
-                              '            dest_purp CHAR(2),\n'
-                              '            mode SMALLINT UNSIGNED,\n'
-                              '            depart_min FLOAT,\n'
-                              '            trip_dist FLOAT,\n'
-                              '            arrival_min FLOAT,\n'
-                              '            time_at_dest FLOAT)').format(table_name))
 
     def read_mag_csv(self, filepath):
         '''Takes MAG data as a CSV, and parses the file to a dictionary.
@@ -103,20 +75,11 @@ class MagDataToPlansByPidAndMaz:
 
             orig_purp = self.purpose_dict[str(actor[22])]
             dest_purp = self.purpose_dict[str(actor[23])]
-            mode = self.mode_dict[int(actor[24])]
+            mode = self.mode_dict[str(actor[24])]
 
             actor_data = [uuid, pid, int(actor[19]), int(actor[21]), orig_purp, dest_purp, mode,
                           float(actor[26]), float(actor[27]), float(actor[31]), float(actor[32])]
             self.actor_dict[pid].append(actor_data)
-
-    def write_mag_to_sql(self):
-        for actor in self.actor_dict:
-            insert_list = list()
-            for x in self.actor_dict[actor]:
-                insert_list.append(tuple(x))
-            exec_str = f"INSERT INTO {self.table_name} VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
-            self.cur.executemany(exec_str, insert_list)
-        self.conn.commit()
 
     def write_mag_to_file(self, filepath):
         with open(filepath, 'w+') as handle:
@@ -124,12 +87,7 @@ class MagDataToPlansByPidAndMaz:
 
 
 if (__name__ == "__main__"):
-    # pw = getpass.getpass()
-    # db_param = {'user': 'root', 'db': 'MagDataToPlansByPidAndMaz',
-    #             'host': 'localhost', 'password': pw}
     example = MagDataToPlansByPidAndMaz()
-    # example.connect_database(db_param, table_name='Example', drop=True)
-    example.read_mag_csv("../Data/output_disaggTripList.csv")
-    # example.write_mag_to_sql()
+    example.read_mag_csv("Data/output_disaggTripList.csv")
     example.write_mag_to_file(
         "Data/MagDataToPlan_output_Example_no_indent.json")
