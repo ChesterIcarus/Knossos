@@ -1,9 +1,5 @@
 import csv
 import json
-import getpass
-import sqlite3 as sql
-# import pymysql as mysql
-import MySQLdb as mysql
 from collections import defaultdict
 
 
