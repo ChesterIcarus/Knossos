@@ -1,5 +1,5 @@
-import json
 from collections import defaultdict
+import json
 import random
 import math
 
@@ -13,12 +13,15 @@ class AgentPlansToJson:
         self.apn_per_agent = defaultdict(dict)
         self.apn_plan_dict = defaultdict(list)
 
-    def read_json_maz_plans(self, filename, __testing__=False):
+    def read_json_maz_plans(self, filename, __coeff__=1):
         with open(filename, 'r') as handle:
             self.maz_plan_dict = json.load(handle)
-            if __testing__:
-                self.maz_plan_dict = {k: self.maz_plan_dict[k] for k in list(self.maz_plan_dict)[
-                    0:30]}
+            if __coeff__ != 1:
+                self.maz_plan_dict = {k: self.maz_plan_dict[k] for k in
+                                      random.choices(list(self.maz_plan_dict),
+                                                     k=math.floor(float(len(
+                                                         self.maz_plan_dict)) * __coeff__))}
+            print(f"Selected {__coeff__ * 100.0}% of the agent population")
 
     def assign_apn_to_agents(self, maz_to_apn_filepath):
         with open(maz_to_apn_filepath, 'r') as handle:
@@ -99,16 +102,14 @@ class AgentPlansToJson:
         for agent in list(self.apn_plan_dict):
             sorted(self.apn_plan_dict[agent], key=lambda x: x["to_sort"])
 
-    def write_json(self, filename):
+    def write_json(self, filename, __indent__=None):
         with open(filename, "w+") as handle:
-            json.dump(self.apn_plan_dict, handle, indent=1)
+            json.dump(self.apn_plan_dict, handle, indent=__indent__)
 
 
 if __name__ == "__main__":
     example = AgentPlansToJson()
-    example.read_json_maz_plans(
-        'Data/MagDataToPlan_output_Example_no_indent.json', __testing__=False)
-    example.assign_apn_to_agents(
-        'Data/full_maricopa_parcel_w_coord_dict_MAZ.json')
+    example.read_json_maz_plans('data/mag_agents_w_APN.json', __coeff__=1.0)
+    example.assign_apn_to_agents('data/full_maricop_parcel_coord_by_MAZ.json')
     example.to_dict()
-    example.write_json("Data/full_actor_plans_apn_coord.json")
+    example.write_json('data/full_mag_plans_by_coord.json')

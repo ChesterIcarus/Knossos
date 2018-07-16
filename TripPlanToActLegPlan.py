@@ -9,7 +9,7 @@ class TripPlanToActLegPlan:
 
     def __init__(self):
         print(
-            'Trip plan MAG format being converted into ACT -> LEG -> ACT\nformat for MATsim')
+            'Trip plan MAG format being converted into ACT -> LEG -> ACT format for MATsim')
         self.projection = None
         self.trip_plan_from_file = list()
         self.actor_plans = list()
@@ -39,21 +39,31 @@ class TripPlanToActLegPlan:
                 else:
                     tmp_x = mag_entry['orig']['x']
                     tmp_y = mag_entry['orig']['y']
+                start_time = 0
+                if len(self.actor_plans[-1]["plans"]) is not 0:
+                    start_time = self.actor_plans[-1]["plans"][-1]['depart_time_sec'] + \
+                        self.actor_plans[-1]["plans"][-1]['travel_time_sec']
                 self.actor_plans[-1]["plans"].append({'actType': "ACTIVITY",
                                                       'x': tmp_x,
                                                       'y': tmp_y,
                                                       'purpose': mag_entry['orig']['purpose'],
-                                                      'depart_time_str': '', 'travel_time_str': '',
-                                                      'depart_time_sec_dbl': '', 'travel_time_sec_dbl': '',
+                                                      'depart_time_sec': 0.0,
+                                                      'travel_time_sec': 0.0,
+                                                      'start_time_sec': start_time,
+                                                      'end_time_sec': mag_entry['depart_time_sec_dbl'],
                                                       'mode': ''})
                 self.actor_plans[-1]["plans"].append({'actType': "LEG",
-                                                      'x': 0.0, 'y': 0.0, 'purpose': '',
-                                                      'depart_time_str': mag_entry['depart_time_str'],
-                                                      'travel_time_str': mag_entry['travel_time_str'],
-                                                      'depart_time_sec_dbl': mag_entry['depart_time_sec_dbl'],
-                                                      'travel_time_sec_dbl': mag_entry['travel_time_sec_dbl'],
+                                                      'x': 0.0,
+                                                      'y': 0.0,
+                                                      'purpose': '',
+                                                      'depart_time_sec': mag_entry['depart_time_sec_dbl'],
+                                                      'travel_time_sec': mag_entry['travel_time_sec_dbl'],
+                                                      'start_time_sec': 0.0,
+                                                      'end_time_sec': 0.0,
                                                       'mode': mag_entry['mode']})
             final_trip = list(self.trip_plan_from_file[actor_id])[-1]
+            start_time = final_trip['depart_time_sec_dbl'] + \
+                final_trip['travel_time_sec_dbl']
             if proj:
                 tmp_x, tmp_y = self.proj_coord(
                     final_trip['orig']['x'], final_trip['orig']['y'])
@@ -65,8 +75,10 @@ class TripPlanToActLegPlan:
                                                   'x': tmp_x,
                                                   'y': tmp_y,
                                                   'purpose': final_trip['dest']['purpose'],
-                                                  'depart_time_str': '', 'travel_time_str': '',
-                                                  'depart_time_sec_dbl': '', 'travel_time_sec_dbl': '',
+                                                  'depart_time_sec': 0.0,
+                                                  'travel_time_sec': 0.0,
+                                                  'start_time_sec': start_time,
+                                                  'end_time_sec': 86400.0,
                                                   'mode': ''})
 
     def write_conv_plans(self, filepath, indent):
@@ -82,6 +94,6 @@ class TripPlanToActLegPlan:
 
 if __name__ == '__main__':
     example = TripPlanToActLegPlan()
-    example.set_projection('epsg:2223', 'epsg:4326')
-    example.convert_file('Data/samp_actor_plans_apn_coord.json',
-                         'Data/MATsim_plan_format.json', indent=2, proj=True)
+    # example.set_projection('epsg:2223', 'epsg:2223')
+    example.convert_file(input_filepath='data/full_mag_plans_by_coord.json',
+                         output_filepath='data/full_MATsimPlans_2223.json', indent=None, proj=False)

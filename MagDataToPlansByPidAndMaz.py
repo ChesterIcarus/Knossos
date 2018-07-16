@@ -28,6 +28,26 @@ class MagDataToPlansByPidAndMaz:
         "10": "s",
         "15": "w",
     }
+    #     purpose_dict = {
+    #     "0": "home",
+    #     "1": "work",
+    #     "2": "university",
+    #     "3": "school",
+    #     "411": "pure_escort",
+    #     "412": "rideshare",
+    #     "42": "other_escort",
+    #     "5": "shopping",
+    #     "6": "other_maintenence",
+    #     "4": "breakfast",
+    #     "7": "food",
+    #     "71": "breakfast",
+    #     "72": "lunch",
+    #     "73": "dinner",
+    #     "8": "visiting",
+    #     "9": "other_discretionary",
+    #     "10": "special_event",
+    #     "15": "work_related",
+    # }
     mode_dict = {
         "1": "car",
         "2": "car",
@@ -80,14 +100,16 @@ class MagDataToPlansByPidAndMaz:
             actor_data = [uuid, pid, int(actor[19]), int(actor[21]), orig_purp, dest_purp, mode,
                           float(actor[26]), float(actor[27]), float(actor[31]), float(actor[32])]
             self.actor_dict[pid].append(actor_data)
+        print("MAG data read, actors plans organized into dictionary.")
 
     def write_mag_to_file(self, filepath):
+        print(f"Writing to {filepath}")
         with open(filepath, 'w+') as handle:
             json.dump(self.actor_dict, handle)
+        print(f"Finished writing to {filepath}")
 
 
 if (__name__ == "__main__"):
     example = MagDataToPlansByPidAndMaz()
-    example.read_mag_csv("Data/output_disaggTripList.csv")
-    example.write_mag_to_file(
-        "Data/MagDataToPlan_output_Example_no_indent.json")
+    example.read_mag_csv("raw/output_disaggTripList.csv")
+    example.write_mag_to_file("data/mag_agents_w_APN.json")
